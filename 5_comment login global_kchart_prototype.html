@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global K Chart – 로그인 플로우 v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+:root {
+  --primary:#22C55E; --primary-dark:#16A34A;
+  --accent:#3D3BF3;
+  --bg:#0A0A0A; --surface:#141414; --surface-2:#1E1E1E;
+  --text-primary:#FFF; --text-secondary:#A0A0A0; --text-muted:#505050;
+  --radius:16px; --radius-sm:10px;
+  --font:'Pretendard',-apple-system,sans-serif;
+}
+body { background:#1a1a2e; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; font-family:var(--font); padding:32px 16px; gap:24px; flex-wrap:wrap; }
+
+.phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+.phone-label { font-size:11px; font-weight:700; color:#666; letter-spacing:0.06em; text-transform:uppercase; text-align:center; line-height:1.5; }
+.phone { width:390px; height:844px; background:var(--bg); border-radius:44px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222,0 32px 80px rgba(0,0,0,0.7); border:1px solid #333; }
+.screen { width:100%; height:100%; overflow:hidden; position:relative; background:#050510; }
+
+/* 상태바 */
+.status-bar { display:flex; justify-content:space-between; align-items:center; padding:12px 24px 4px; font-size:12px; font-weight:700; color:#fff; }
+.status-icons { display:flex; gap:6px; align-items:center; }
+
+/* 배경 Wall */
+.wall-bg { padding:20px 20px 0; opacity:0.4; }
+.wall-bg-title { font-size:20px; font-weight:800; color:#fff; margin-bottom:3px; }
+.wall-bg-title span { color:var(--primary); }
+.wall-bg-sub { font-size:12px; color:var(--text-muted); margin-bottom:16px; }
+.cheer-card-mini { background:linear-gradient(135deg,rgba(34,197,94,0.1),rgba(36,36,216,0.15)); border:1.5px solid rgba(34,197,94,0.2); border-radius:var(--radius); padding:14px; }
+.cheer-artist-mini { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.cheer-img { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#8B4513,#CD853F); display:flex; align-items:center; justify-content:center; font-size:18px; }
+.cheer-name { font-size:15px; font-weight:800; color:#fff; }
+.cheer-meta { font-size:10px; color:rgba(255,255,255,0.4); }
+.cheer-msg-trigger { width:100%; padding:10px; background:rgba(255,255,255,0.07); border:1.5px solid rgba(255,255,255,0.1); border-radius:var(--radius-sm); color:rgba(255,255,255,0.7); font-size:13px; font-weight:600; font-family:var(--font); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+
+/* 바텀시트 공통 */
+.overlay { position:absolute; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); display:flex; align-items:flex-end; z-index:200; opacity:0; pointer-events:none; transition:opacity 0.25s; }
+.overlay.show { opacity:1; pointer-events:all; }
+.sheet { width:100%; background:#141414; border-radius:24px 24px 0 0; transform:translateY(100%); transition:transform 0.33s cubic-bezier(0.25,0.46,0.45,0.94); }
+.overlay.show .sheet { transform:translateY(0); }
+.sheet-handle { width:36px; height:4px; background:rgba(255,255,255,0.14); border-radius:2px; margin:16px auto 0; }
+.sheet-inner { padding:16px 20px 36px; }
+.sheet-title { font-size:18px; font-weight:800; color:#fff; margin-bottom:4px; }
+.sheet-sub { font-size:13px; color:var(--text-muted); margin-bottom:20px; line-height:1.6; }
+
+/* 스텝 인디케이터 */
+.step-row { display:flex; align-items:center; gap:6px; padding:12px 0 4px; }
+.step-item { display:flex; align-items:center; gap:5px; }
+.step-num { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; flex-shrink:0; }
+.step-num.done { background:rgba(34,197,94,0.3); color:var(--primary); }
+.step-num.active { background:var(--primary); color:#000; }
+.step-num.pending { background:rgba(255,255,255,0.08); color:var(--text-muted); }
+.step-label { font-size:10px; font-weight:600; }
+.step-label.active { color:#fff; }
+.step-label.pending { color:var(--text-muted); }
+.step-label.done { color:rgba(34,197,94,0.7); }
+.step-arrow { font-size:10px; color:rgba(255,255,255,0.15); }
+
+/* ════════════
+   STEP 1: 회원/비회원 선택
+════════════ */
+.login-option-btn { width:100%; padding:16px; border-radius:var(--radius-sm); border:1.5px solid rgba(255,255,255,0.1); background:var(--surface-2); cursor:pointer; font-family:var(--font); text-align:left; transition:all 0.18s; margin-bottom:10px; display:flex; align-items:center; gap:14px; }
+.login-option-btn:active { background:var(--surface); }
+.login-option-btn.primary-option { background:linear-gradient(135deg,rgba(61,59,243,0.2),rgba(36,36,216,0.2)); border-color:rgba(61,59,243,0.4); }
+.login-option-icon { font-size:24px; flex-shrink:0; }
+.login-option-text { flex:1; }
+.login-option-title { font-size:15px; font-weight:700; color:#fff; margin-bottom:2px; }
+.login-option-desc { font-size:11px; color:var(--text-muted); line-height:1.4; }
+.login-option-arrow { font-size:16px; color:var(--text-muted); flex-shrink:0; }
+.login-divider { display:flex; align-items:center; gap:10px; margin:4px 0 14px; }
+.login-divider-line { flex:1; height:1px; background:rgba(255,255,255,0.08); }
+.login-divider-text { font-size:11px; color:var(--text-muted); font-weight:600; }
+
+/* ════════════
+   STEP 2: 소셜 로그인 선택
+════════════ */
+.nonmember-notice { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:16px; }
+.nonmember-notice-text { font-size:12px; color:rgba(255,255,255,0.55); line-height:1.6; }
+.nonmember-notice-text strong { color:var(--primary); }
+.social-btn { width:100%; padding:14px; border-radius:var(--radius-sm); border:none; font-size:14px; font-weight:700; font-family:var(--font); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px; transition:all 0.2s; }
+.google-btn { background:#fff; color:#1a1a1a; }
+.apple-btn { background:#1c1c1e; color:#fff; border:1px solid #2a2a2a; }
+.social-btn:active { transform:scale(0.98); }
+.social-cancel { width:100%; background:none; border:none; font-size:13px; color:var(--text-muted); font-family:var(--font); cursor:pointer; padding:10px; margin-top:2px; }
+
+/* ════════════
+   STEP 3: Google OAuth (전체 화면)
+════════════ */
+.google-auth-page { position:absolute; inset:0; background:#fff; z-index:300; transform:translateY(100%); transition:transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94); display:flex; flex-direction:column; }
+.google-auth-page.open { transform:translateY(0); }
+.google-topbar { display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid #e8eaed; }
+.google-topbar-close { width:28px; height:28px; background:none; border:none; font-size:17px; color:#5f6368; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.google-url-bar { flex:1; background:#f1f3f4; border-radius:100px; padding:6px 14px; display:flex; align-items:center; gap:5px; }
+.google-url-text { font-size:12px; color:#5f6368; }
+.google-body { flex:1; padding:28px 24px 16px; overflow-y:auto; }
+.google-logo-wrap { display:flex; justify-content:center; margin-bottom:18px; }
+.google-logo-wrap svg { width:66px; }
+.google-auth-h1 { font-size:22px; font-weight:400; color:#202124; text-align:center; margin-bottom:5px; font-family:'Google Sans',Roboto,sans-serif; }
+.google-auth-h2 { font-size:14px; color:#5f6368; text-align:center; margin-bottom:24px; font-family:Roboto,sans-serif; }
+.google-permission-box { background:#f8f9fa; border:1px solid #dadce0; border-radius:12px; padding:14px 16px; margin-bottom:18px; }
+.google-permission-service { display:flex; align-items:center; gap:10px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid #e8eaed; }
+.google-permission-service-icon { width:36px; height:36px; background:linear-gradient(135deg,#22C55E,#16A34A); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+.google-permission-service-name { font-size:13px; font-weight:500; color:#202124; font-family:Roboto,sans-serif; }
+.google-permission-service-domain { font-size:11px; color:#5f6368; font-family:Roboto,sans-serif; }
+.google-permission-label { font-size:12px; color:#5f6368; margin-bottom:8px; font-family:Roboto,sans-serif; font-weight:500; }
+.google-permission-item { display:flex; align-items:flex-start; gap:8px; margin-bottom:6px; }
+.google-permission-item:last-child { margin-bottom:0; }
+.google-permission-item-icon { font-size:14px; flex-shrink:0; }
+.google-permission-item-text { font-size:12px; color:#202124; font-family:Roboto,sans-serif; line-height:1.4; }
+.google-account-box { border:1px solid #dadce0; border-radius:12px; overflow:hidden; margin-bottom:16px; }
+.google-account-row { display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; transition:background 0.15s; }
+.google-account-row:active { background:#f8f9fa; }
+.google-account-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#4285F4,#34A853); display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:#fff; flex-shrink:0; }
+.google-account-info { flex:1; }
+.google-account-name { font-size:14px; font-weight:500; color:#202124; font-family:Roboto,sans-serif; }
+.google-account-email { font-size:12px; color:#5f6368; font-family:Roboto,sans-serif; }
+.google-account-icon { font-size:16px; color:#1a73e8; }
+.google-policy { font-size:11px; color:#5f6368; text-align:center; line-height:1.5; font-family:Roboto,sans-serif; }
+.google-policy a { color:#1a73e8; }
+.google-footer { display:flex; justify-content:flex-end; gap:10px; padding:12px 24px 24px; border-top:1px solid #e8eaed; }
+.google-footer-cancel { padding:9px 18px; background:none; border:none; border-radius:100px; font-size:14px; font-weight:500; color:#1a73e8; cursor:pointer; font-family:Roboto,sans-serif; }
+.google-footer-continue { padding:9px 22px; background:#1a73e8; border:none; border-radius:100px; font-size:14px; font-weight:500; color:#fff; cursor:pointer; font-family:Roboto,sans-serif; transition:background 0.18s; }
+.google-footer-continue:active { background:#1557b0; }
+
+/* ════════════
+   STEP 4: 약관 동의 (바텀시트)
+════════════ */
+.terms-all-row { display:flex; align-items:center; gap:10px; padding:13px 14px; background:rgba(34,197,94,0.07); border:1px solid rgba(34,197,94,0.2); border-radius:var(--radius-sm); margin-bottom:10px; cursor:pointer; }
+.terms-all-text { flex:1; font-size:14px; font-weight:700; color:#fff; }
+.checkbox { width:22px; height:22px; border-radius:6px; border:2px solid rgba(255,255,255,0.18); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.18s; cursor:pointer; }
+.checkbox.checked { background:var(--primary); border-color:var(--primary); }
+.checkbox.checked::after { content:'✓'; font-size:13px; font-weight:800; color:#000; }
+.terms-divider { height:1px; background:rgba(255,255,255,0.06); margin:8px 0; }
+.terms-row { display:flex; align-items:flex-start; gap:10px; padding:9px 0; }
+.terms-row-left { flex:1; }
+.terms-badge { display:inline-block; font-size:10px; font-weight:700; padding:1px 7px; border-radius:100px; margin-bottom:3px; }
+.badge-required { background:rgba(239,68,68,0.15); color:#EF4444; }
+.badge-optional { background:rgba(255,255,255,0.07); color:var(--text-muted); }
+.terms-title { font-size:13px; font-weight:600; color:#fff; margin-bottom:1px; }
+.terms-desc { font-size:11px; color:var(--text-muted); line-height:1.4; }
+.terms-link { font-size:11px; color:var(--primary); background:none; border:none; cursor:pointer; font-family:var(--font); font-weight:600; padding:0; margin-top:2px; display:block; text-decoration:underline; }
+
+/* 개인정보 요약 */
+.privacy-box { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:var(--radius-sm); padding:10px 12px; margin:6px 0 2px; }
+.privacy-box-title { font-size:10px; font-weight:700; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px; }
+.privacy-item { display:flex; gap:8px; margin-bottom:4px; }
+.privacy-item:last-child { margin-bottom:0; }
+.privacy-key { font-size:11px; color:var(--text-muted); width:60px; flex-shrink:0; }
+.privacy-val { font-size:11px; color:rgba(255,255,255,0.7); flex:1; line-height:1.4; }
+
+.terms-submit { width:100%; padding:14px; border-radius:var(--radius-sm); border:none; font-size:15px; font-weight:800; font-family:var(--font); cursor:pointer; transition:all 0.2s; margin-top:14px; }
+.terms-submit.on { background:linear-gradient(135deg,var(--primary),#16a34a); color:#000; }
+.terms-submit.off { background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.25); pointer-events:none; }
+
+/* ════════════
+   STEP 5: 완료
+════════════ */
+.success-page { position:absolute; inset:0; background:#050510; z-index:400; transform:translateY(100%); transition:transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 24px; }
+.success-page.open { transform:translateY(0); }
+.success-icon { width:76px; height:76px; background:linear-gradient(135deg,var(--primary),#16a34a); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:34px; margin-bottom:18px; box-shadow:0 0 40px rgba(34,197,94,0.35); animation:pop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes pop { from{transform:scale(0);opacity:0;} to{transform:scale(1);opacity:1;} }
+.success-title { font-size:22px; font-weight:800; color:#fff; margin-bottom:6px; text-align:center; }
+.success-sub { font-size:13px; color:var(--text-muted); text-align:center; line-height:1.6; margin-bottom:28px; }
+
+.success-account { width:100%; background:var(--surface); border:1px solid rgba(255,255,255,0.08); border-radius:var(--radius); padding:13px 16px; margin-bottom:12px; display:flex; align-items:center; gap:12px; }
+.success-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#4285F4,#34A853); display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:#fff; flex-shrink:0; }
+.success-account-name { font-size:14px; font-weight:700; color:#fff; }
+.success-account-email { font-size:11px; color:var(--text-muted); margin-top:1px; }
+.success-account-badge { margin-left:auto; font-size:10px; font-weight:700; color:var(--primary); background:rgba(34,197,94,0.1); border-radius:100px; padding:3px 8px; flex-shrink:0; }
+
+.success-db-box { width:100%; background:rgba(34,197,94,0.05); border:1px solid rgba(34,197,94,0.14); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:12px; }
+.success-db-title { font-size:10px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+.success-db-item { display:flex; align-items:center; gap:7px; font-size:11px; color:rgba(255,255,255,0.55); margin-bottom:3px; line-height:1.4; }
+.success-db-item:last-child { margin-bottom:0; }
+.success-db-dot { width:4px; height:4px; border-radius:50%; background:rgba(34,197,94,0.5); flex-shrink:0; }
+
+.success-terms-list { width:100%; margin-bottom:24px; }
+.success-terms-item { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+.success-terms-item:last-child { border-bottom:none; }
+.success-terms-check { font-size:13px; }
+.success-terms-label { flex:1; font-size:12px; color:rgba(255,255,255,0.6); }
+.success-terms-status { font-size:11px; font-weight:700; }
+.status-agreed { color:var(--primary); }
+.status-skipped { color:var(--text-muted); }
+
+.success-write-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--primary),#16a34a); border:none; border-radius:var(--radius-sm); color:#000; font-size:15px; font-weight:800; font-family:var(--font); cursor:pointer; transition:all 0.2s; }
+.success-write-btn:active { transform:scale(0.98); }
+
+/* 토스트 */
+.toast { position:absolute; top:60px; left:50%; transform:translateX(-50%); background:var(--primary); color:#000; padding:9px 18px; border-radius:100px; font-size:12px; font-weight:700; white-space:nowrap; z-index:999; opacity:0; transition:opacity 0.3s; pointer-events:none; }
+.toast.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════
+     화면 1: 회원/비회원 선택
+════════════════════════════════ -->
+<div class="phone-wrap">
+  <div class="phone-label">STEP 1<br>회원 / 비회원 선택</div>
+  <div class="phone">
+  <div class="screen">
+    <div class="status-bar"><span>9:41</span><div class="status-icons"><svg width="14" height="10" viewBox="0 0 16 12" fill="white"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4" y="2" width="3" height="10" rx="1"/><rect x="8" y="0" width="3" height="12" rx="1"/><rect x="12" y="0" width="3" height="12" rx="1"/></svg></div></div>
+
+    <div class="wall-bg">
+      <div class="wall-bg-title">K-pop 아티스트 <span>응원 Wall</span></div>
+      <div class="wall-bg-sub">2025년 5월 · 142,847개의 응원</div>
+      <div class="cheer-card-mini">
+        <div class="cheer-artist-mini">
+          <div class="cheer-img">👩‍🦰</div>
+          <div><div class="cheer-name">제니 (JENNIE)</div><div class="cheer-meta">이번 달 응원 1위 · 5월 응원 Wall</div></div>
+        </div>
+        <button class="cheer-msg-trigger">✏️ 응원 메시지 남기기</button>
+      </div>
+    </div>
+
+    <!-- 회원/비회원 선택 바텀시트 -->
+    <div class="overlay show">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-inner">
+          <div class="step-row">
+            <div class="step-item"><div class="step-num active">1</div><div class="step-label active">시작</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num pending">2</div><div class="step-label pending">로그인</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num pending">3</div><div class="step-label pending">인증</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num pending">4</div><div class="step-label pending">약관</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num pending">5</div><div class="step-label pending">완료</div></div>
+          </div>
+          <div style="margin-top:16px">
+            <div class="sheet-title">메시지를 남기려면<br>로그인이 필요해요</div>
+            <div class="sheet-sub">서비스 회원이시면 회원 로그인을,<br>비회원이면 SNS로 간편하게 시작하세요</div>
+          </div>
+
+          <!-- 회원 로그인 -->
+          <button class="login-option-btn primary-option">
+            <div class="login-option-icon">🎵</div>
+            <div class="login-option-text">
+              <div class="login-option-title">서비스 회원 로그인</div>
+              <div class="login-option-desc">이미 가입하신 분은 여기서 로그인하세요</div>
+            </div>
+            <div class="login-option-arrow">›</div>
+          </button>
+
+          <div class="login-divider">
+            <div class="login-divider-line"></div>
+            <div class="login-divider-text">또는</div>
+            <div class="login-divider-line"></div>
+          </div>
+
+          <!-- 비회원 -->
+          <button class="login-option-btn">
+            <div class="login-option-icon">💚</div>
+            <div class="login-option-text">
+              <div class="login-option-title">비회원으로 댓글 남기기</div>
+              <div class="login-option-desc">회원가입 없이 SNS 계정으로 응원 메시지를 남길 수 있어요</div>
+            </div>
+            <div class="login-option-arrow">›</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     화면 2: 소셜 로그인 선택
+════════════════════════════════ -->
+<div class="phone-wrap">
+  <div class="phone-label">STEP 2<br>SNS 로그인 선택</div>
+  <div class="phone">
+  <div class="screen">
+    <div class="status-bar"><span>9:41</span><div class="status-icons"><svg width="14" height="10" viewBox="0 0 16 12" fill="white"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4" y="2" width="3" height="10" rx="1"/><rect x="8" y="0" width="3" height="12" rx="1"/><rect x="12" y="0" width="3" height="12" rx="1"/></svg></div></div>
+
+    <div class="wall-bg">
+      <div class="wall-bg-title">K-pop 아티스트 <span>응원 Wall</span></div>
+      <div class="wall-bg-sub">비회원 댓글 서비스 진행 중</div>
+      <div class="cheer-card-mini" style="opacity:0.5">
+        <div class="cheer-artist-mini"><div class="cheer-img">👩‍🦰</div><div><div class="cheer-name">제니 (JENNIE)</div><div class="cheer-meta">5월 응원 Wall</div></div></div>
+      </div>
+    </div>
+
+    <!-- 소셜 로그인 바텀시트 -->
+    <div class="overlay show">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-inner">
+          <div class="step-row">
+            <div class="step-item"><div class="step-num done">✓</div><div class="step-label done">시작</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num active">2</div><div class="step-label active">로그인</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num pending">3</div><div class="step-label pending">인증</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num pending">4</div><div class="step-label pending">약관</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num pending">5</div><div class="step-label pending">완료</div></div>
+          </div>
+          <div style="margin-top:16px">
+            <div class="sheet-title">SNS 계정으로 계속하기</div>
+            <div class="sheet-sub">별도 회원가입 없이 응원 메시지를<br>남길 수 있어요</div>
+          </div>
+
+          <!-- 비회원 안내 -->
+          <div class="nonmember-notice">
+            <div class="nonmember-notice-text">
+              <strong>비회원 댓글 서비스</strong>예요.<br>
+              회원 DB에 저장되지 않으며,<br>
+              SNS 고유 식별값(UID)만 서비스 DB에 기록돼요.
+            </div>
+          </div>
+
+          <button class="social-btn google-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Google로 계속하기
+          </button>
+          <button class="social-btn apple-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            Apple로 계속하기
+          </button>
+          <button class="social-cancel">취소</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     화면 3: Google OAuth
+════════════════════════════════ -->
+<div class="phone-wrap">
+  <div class="phone-label">STEP 3<br>Google 인증</div>
+  <div class="phone">
+  <div class="screen">
+
+    <!-- 구글 OAuth 전체화면 -->
+    <div class="google-auth-page open">
+      <div class="google-topbar">
+        <button class="google-topbar-close">✕</button>
+        <div class="google-url-bar">
+          <span style="font-size:12px">🔒</span>
+          <span class="google-url-text">accounts.google.com</span>
+        </div>
+      </div>
+
+      <div class="google-body">
+        <div class="google-logo-wrap">
+          <svg viewBox="0 0 272 92" xmlns="http://www.w3.org/2000/svg"><path fill="#EA4335" d="M115.75 47.18c0 12.77-9.99 22.18-22.25 22.18s-22.25-9.41-22.25-22.18C71.25 34.32 81.24 25 93.5 25s22.25 9.32 22.25 22.18zm-9.74 0c0-7.98-5.79-13.44-12.51-13.44S80.99 39.2 80.99 47.18c0 7.9 5.79 13.44 12.51 13.44s12.51-5.55 12.51-13.44z"/><path fill="#FBBC05" d="M163.75 47.18c0 12.77-9.99 22.18-22.25 22.18s-22.25-9.41-22.25-22.18c0-12.85 9.99-22.18 22.25-22.18s22.25 9.32 22.25 22.18zm-9.74 0c0-7.98-5.79-13.44-12.51-13.44s-12.51 5.46-12.51 13.44c0 7.9 5.79 13.44 12.51 13.44s12.51-5.55 12.51-13.44z"/><path fill="#4285F4" d="M209.75 26.34v39.82c0 16.38-9.66 23.07-21.08 23.07-10.75 0-17.22-7.19-19.66-13.07l8.48-3.53c1.51 3.61 5.21 7.87 11.17 7.87 7.31 0 11.84-4.51 11.84-13v-3.19h-.34c-2.18 2.69-6.38 5.04-11.68 5.04-11.09 0-21.25-9.66-21.25-22.09 0-12.52 10.16-22.26 21.25-22.26 5.29 0 9.49 2.35 11.68 4.96h.34v-3.61h9.25zm-8.56 20.92c0-7.81-5.21-13.52-11.84-13.52-6.72 0-12.35 5.71-12.35 13.52 0 7.73 5.63 13.36 12.35 13.36 6.63 0 11.84-5.63 11.84-13.36z"/><path fill="#34A853" d="M225 3v65h-9.5V3h9.5z"/><path fill="#EA4335" d="M262.02 54.48l7.56 5.04c-2.44 3.61-8.32 9.83-18.48 9.83-12.6 0-22.01-9.74-22.01-22.18 0-13.19 9.49-22.18 20.92-22.18 11.51 0 17.14 9.16 18.98 14.11l1.01 2.52-29.65 12.28c2.27 4.45 5.8 6.72 10.75 6.72 4.96 0 8.4-2.44 10.92-6.14zm-23.27-7.98l19.82-8.23c-1.09-2.77-4.37-4.7-8.23-4.7-4.95 0-11.84 4.37-11.59 12.93z"/></svg>
+        </div>
+        <div class="google-auth-h1">로그인</div>
+        <div class="google-auth-h2">Global K Chart 계속하기</div>
+
+        <div class="google-permission-box">
+          <div class="google-permission-service">
+            <div class="google-permission-service-icon">💚</div>
+            <div>
+              <div class="google-permission-service-name">Global K Chart</div>
+              <div class="google-permission-service-domain">globalkchart.com</div>
+            </div>
+          </div>
+          <div class="google-permission-label">다음 정보에 대한 액세스를 허용합니다</div>
+          <div class="google-permission-item">
+            <div class="google-permission-item-icon">👤</div>
+            <div class="google-permission-item-text">이름, 프로필 사진, 이메일 주소 보기</div>
+          </div>
+          <div class="google-permission-item">
+            <div class="google-permission-item-icon">🔑</div>
+            <div class="google-permission-item-text">Google 계정 고유 식별자(UID) 제공</div>
+          </div>
+        </div>
+
+        <div class="google-account-box">
+          <div class="google-account-row">
+            <div class="google-account-avatar">K</div>
+            <div class="google-account-info">
+              <div class="google-account-name">Kim Minsu</div>
+              <div class="google-account-email">minsu.kim@gmail.com</div>
+            </div>
+            <div class="google-account-icon">›</div>
+          </div>
+        </div>
+
+        <div class="google-policy">계속하면 Google <a>개인정보처리방침</a> 및<br><a>서비스 약관</a>에 동의하게 됩니다</div>
+      </div>
+
+      <div class="google-footer">
+        <button class="google-footer-cancel">취소</button>
+        <button class="google-footer-continue">계속</button>
+      </div>
+    </div>
+
+  </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════
+     화면 4: 약관 동의 → 완료
+════════════════════════════════ -->
+<div class="phone-wrap">
+  <div class="phone-label">STEP 4~5<br>약관 동의 → 완료</div>
+  <div class="phone">
+  <div class="screen">
+    <div class="status-bar"><span>9:41</span><div class="status-icons"><svg width="14" height="10" viewBox="0 0 16 12" fill="white"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4" y="2" width="3" height="10" rx="1"/><rect x="8" y="0" width="3" height="12" rx="1"/><rect x="12" y="0" width="3" height="12" rx="1"/></svg></div></div>
+
+    <div class="wall-bg" style="opacity:0.25">
+      <div class="wall-bg-title">K-pop 아티스트 <span>응원 Wall</span></div>
+      <div class="wall-bg-sub">Google 인증 완료 · 약관 동의 진행 중</div>
+    </div>
+
+    <!-- 약관 동의 바텀시트 -->
+    <div class="overlay show" id="terms-overlay">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-inner">
+          <div class="step-row">
+            <div class="step-item"><div class="step-num done">✓</div><div class="step-label done">시작</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num done">✓</div><div class="step-label done">로그인</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num done">✓</div><div class="step-label done">인증</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num active">4</div><div class="step-label active">약관</div></div>
+            <div class="step-arrow">›</div>
+            <div class="step-item"><div class="step-num pending">5</div><div class="step-label pending">완료</div></div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="sheet-title">서비스 이용 동의</div>
+            <div class="sheet-sub">비회원 댓글 서비스 이용을 위한<br>마지막 단계예요</div>
+          </div>
+
+          <!-- 전체 동의 -->
+          <div class="terms-all-row" onclick="toggleAll()">
+            <div class="terms-all-text">전체 동의</div>
+            <div class="checkbox" id="chk-all"></div>
+          </div>
+
+          <div class="terms-divider"></div>
+
+          <!-- 약관 1 -->
+          <div class="terms-row">
+            <div class="terms-row-left">
+              <div class="terms-badge badge-required">필수</div>
+              <div class="terms-title">서비스 이용약관 동의</div>
+              <div class="terms-desc">비회원 댓글 서비스 이용 약관</div>
+              <button class="terms-link">전문 보기 ›</button>
+            </div>
+            <div class="checkbox" id="chk-1" onclick="toggleItem(1)"></div>
+          </div>
+
+          <div class="terms-divider"></div>
+
+          <!-- 약관 2: 개인정보 -->
+          <div class="terms-row">
+            <div class="terms-row-left">
+              <div class="terms-badge badge-required">필수</div>
+              <div class="terms-title">개인정보 수집 및 이용 동의</div>
+              <div class="privacy-box">
+                <div class="privacy-box-title">수집 항목 안내</div>
+                <div class="privacy-item"><div class="privacy-key">수집 항목</div><div class="privacy-val">SNS 고유 식별값(UID), 서비스 이용 기록</div></div>
+                <div class="privacy-item"><div class="privacy-key">수집 목적</div><div class="privacy-val">비회원 댓글 서비스 제공, 어뷰징 방지</div></div>
+                <div class="privacy-item"><div class="privacy-key">보유 기간</div><div class="privacy-val">동의 철회 또는 서비스 종료 시까지</div></div>
+              </div>
+              <button class="terms-link">전문 보기 ›</button>
+            </div>
+            <div class="checkbox" id="chk-2" onclick="toggleItem(2)"></div>
+          </div>
+
+          <div class="terms-divider"></div>
+
+          <!-- 약관 3: 마케팅 선택 -->
+          <div class="terms-row">
+            <div class="terms-row-left">
+              <div class="terms-badge badge-optional">선택</div>
+              <div class="terms-title">마케팅 정보 수신 동의</div>
+              <div class="terms-desc">K-pop 차트 소식 및 이벤트 알림 수신</div>
+            </div>
+            <div class="checkbox" id="chk-3" onclick="toggleItem(3)"></div>
+          </div>
+
+          <button class="terms-submit off" id="terms-submit" onclick="completeTerms()">동의하고 시작하기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 완료 페이지 -->
+    <div class="success-page" id="success-page">
+      <div class="success-icon">✓</div>
+      <div class="success-title">시작할 준비 완료!</div>
+      <div class="success-sub">이제 아티스트 응원 메시지를<br>남길 수 있어요 💚</div>
+
+      <div class="success-account">
+        <div class="success-avatar">K</div>
+        <div>
+          <div class="success-account-name">Kim Minsu</div>
+          <div class="success-account-email">minsu.kim@gmail.com</div>
+        </div>
+        <div class="success-account-badge">Google 계정</div>
+      </div>
+
+      <div class="success-db-box">
+        <div class="success-db-title">🔐 서비스 DB 기록 (회원 DB 아님)</div>
+        <div class="success-db-item"><div class="success-db-dot"></div>Google UID (고유 식별값)</div>
+        <div class="success-db-item"><div class="success-db-dot"></div>약관 동의 여부 및 동의 일시</div>
+        <div class="success-db-item"><div class="success-db-dot"></div>작성한 응원 메시지</div>
+      </div>
+
+      <div class="success-terms-list">
+        <div class="success-terms-item">
+          <div class="success-terms-check">✅</div>
+          <div class="success-terms-label">서비스 이용약관</div>
+          <div class="success-terms-status status-agreed">동의완료</div>
+        </div>
+        <div class="success-terms-item">
+          <div class="success-terms-check">✅</div>
+          <div class="success-terms-label">개인정보 수집 및 이용</div>
+          <div class="success-terms-status status-agreed">동의완료</div>
+        </div>
+        <div class="success-terms-item" id="marketing-row">
+          <div class="success-terms-check" id="marketing-check">☑️</div>
+          <div class="success-terms-label">마케팅 정보 수신 (선택)</div>
+          <div class="success-terms-status status-skipped" id="marketing-status">미동의</div>
+        </div>
+      </div>
+
+      <button class="success-write-btn">💚 응원 메시지 작성하기</button>
+    </div>
+
+    <div class="toast" id="toast-4">완료</div>
+  </div>
+  </div>
+</div>
+
+<script>
+  const checks = { 1:false, 2:false, 3:false };
+
+  function toggleItem(n) {
+    checks[n] = !checks[n];
+    document.getElementById('chk-'+n).classList.toggle('checked', checks[n]);
+    updateAll();
+    updateBtn();
+  }
+
+  function toggleAll() {
+    const allOn = checks[1] && checks[2] && checks[3];
+    const next = !allOn;
+    [1,2,3].forEach(n => {
+      checks[n] = next;
+      document.getElementById('chk-'+n).classList.toggle('checked', next);
+    });
+    updateAll();
+    updateBtn();
+  }
+
+  function updateAll() {
+    document.getElementById('chk-all').classList.toggle('checked', checks[1] && checks[2] && checks[3]);
+  }
+
+  function updateBtn() {
+    const btn = document.getElementById('terms-submit');
+    const ok = checks[1] && checks[2];
+    btn.className = 'terms-submit ' + (ok ? 'on' : 'off');
+  }
+
+  function completeTerms() {
+    if(!checks[1] || !checks[2]) return;
+    // 마케팅 동의 여부 완료화면에 반영
+    if(checks[3]) {
+      document.getElementById('marketing-check').textContent = '✅';
+      document.getElementById('marketing-status').textContent = '동의완료';
+      document.getElementById('marketing-status').className = 'success-terms-status status-agreed';
+    }
+    document.getElementById('terms-overlay').classList.remove('show');
+    setTimeout(() => document.getElementById('success-page').classList.add('open'), 200);
+  }
+</script>
+</body>
+</html>
