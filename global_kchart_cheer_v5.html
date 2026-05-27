@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global K Chart – 최종</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@latest/dist/web/static/pretendard.css" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --primary: #22C55E; --primary-dark: #16A34A;
+  --accent: #3D3BF3;
+  --bg: #0A0A0A; --surface: #141414; --surface-2: #1E1E1E;
+  --card-blue: #2424D8; --card-blue-dark: #1616a0;
+  --text-primary: #FFF; --text-secondary: #A0A0A0; --text-muted: #505050;
+  --radius: 16px; --radius-sm: 10px;
+  --font: 'Pretendard', -apple-system, sans-serif;
+}
+body { background:#1a1a2e; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; font-family:var(--font); padding:32px 16px; gap:28px; flex-wrap:wrap; }
+.phone-wrap { display:flex; flex-direction:column; align-items:center; gap:10px; }
+.phone-label { font-size:11px; font-weight:700; color:#666; letter-spacing:0.06em; text-transform:uppercase; }
+.phone { width:390px; height:844px; background:var(--bg); border-radius:44px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222, 0 32px 80px rgba(0,0,0,0.7); border:1px solid #333; }
+.screen { width:100%; height:100%; overflow:hidden; position:relative; display:flex; flex-direction:column; }
+
+/* 상태바 */
+.status-bar { display:flex; justify-content:space-between; align-items:center; padding:12px 24px 4px; font-size:12px; font-weight:700; color:#fff; flex-shrink:0; }
+.status-icons { display:flex; gap:6px; align-items:center; }
+
+/* 히어로 */
+.hero { position:relative; height:148px; overflow:hidden; flex-shrink:0; }
+.hero-bg { position:absolute; inset:0; background:linear-gradient(135deg,#062a06 0%,#08183a 45%,#160828 100%); }
+.hero-bars { position:absolute; right:-18px; top:-8px; display:flex; gap:5px; align-items:flex-end; opacity:0.4; }
+.hero-bar { width:20px; border-radius:4px 4px 0 0; background:linear-gradient(180deg,#22C55E,#16A34A); }
+.hero-content { position:relative; z-index:2; padding:16px 20px 0; }
+.hero-nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.btn-icon { width:30px; height:30px; background:rgba(255,255,255,0.1); border:none; border-radius:50%; color:#fff; font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.hero-title { font-size:26px; font-weight:800; color:#fff; letter-spacing:-0.02em; }
+.hero-title span { color:var(--primary); }
+
+/* 차트 탭 */
+.chart-tabs { display:flex; gap:8px; padding:10px 20px; background:var(--bg); flex-shrink:0; }
+.chart-tab { padding:6px 18px; border-radius:100px; font-size:14px; font-weight:600; border:none; cursor:pointer; transition:all 0.2s; font-family:var(--font); }
+.chart-tab.active { background:var(--primary); color:#000; }
+.chart-tab.inactive { background:var(--surface-2); color:var(--text-secondary); }
+
+/* 날짜바 */
+.date-bar { display:flex; justify-content:space-between; align-items:center; padding:7px 20px; background:var(--bg); border-bottom:1px solid rgba(255,255,255,0.05); flex-shrink:0; }
+.date-filter-btn { display:flex; align-items:center; gap:5px; background:var(--surface-2); border:none; border-radius:100px; padding:5px 12px; color:var(--text-secondary); font-size:12px; font-weight:600; font-family:var(--font); cursor:pointer; }
+.chart-info-btn { font-size:12px; color:var(--text-muted); background:none; border:none; cursor:pointer; font-family:var(--font); }
+
+/* 스크롤 영역 */
+.scroll-body { flex:1; overflow-y:auto; padding-bottom:80px; }
+.scroll-body::-webkit-scrollbar { display:none; }
+
+/* ═══════════════════════════════
+   팬덤 반응 순위 섹션 (일간 상단)
+═══════════════════════════════ */
+.fandom-rank-section {
+  margin:10px 16px 4px;
+  background:linear-gradient(135deg,rgba(36,36,216,0.25),rgba(34,197,94,0.1));
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:var(--radius);
+  overflow:hidden;
+}
+.fandom-rank-header {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:12px 14px 10px;
+}
+.fandom-rank-title { font-size:13px; font-weight:800; color:#fff; display:flex; align-items:center; gap:6px; }
+.live-dot { width:6px; height:6px; border-radius:50%; background:var(--primary); animation:pulse 1.4s infinite; flex-shrink:0; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(0.8);} }
+.fandom-rank-sub { font-size:10px; color:var(--text-muted); font-weight:500; }
+
+.fandom-rank-list { padding:0 14px; }
+.fandom-rank-item {
+  display:flex; align-items:center; gap:10px;
+  padding:7px 0;
+  border-top:1px solid rgba(255,255,255,0.06);
+  transition:all 0.2s;
+}
+.fandom-rank-item.hidden { display:none; }
+.fandom-rank-pos { width:18px; font-size:13px; font-weight:800; color:var(--text-muted); text-align:center; flex-shrink:0; }
+.fandom-rank-pos.top1 { color:#FFD700; }
+.fandom-rank-pos.top2 { color:#C0C0C0; }
+.fandom-rank-pos.top3 { color:#CD7F32; }
+.fandom-rank-emoji { font-size:20px; flex-shrink:0; }
+.fandom-rank-info { flex:1; }
+.fandom-rank-name { font-size:13px; font-weight:700; color:#fff; }
+.fandom-rank-fandom { font-size:10px; font-weight:600; color:var(--primary); margin-top:1px; }
+.fandom-rank-bar-wrap { margin-top:3px; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
+.fandom-rank-bar { height:100%; border-radius:2px; transition:width 0.8s ease; }
+.fandom-rank-count { font-size:12px; font-weight:700; color:rgba(255,255,255,0.7); flex-shrink:0; }
+.fandom-rank-change { font-size:10px; font-weight:700; flex-shrink:0; width:28px; text-align:right; }
+.change-up { color:var(--primary); }
+.change-same { color:var(--text-muted); }
+.change-down { color:#EF4444; }
+
+/* 더보기 버튼 */
+.fandom-more-btn {
+  width:100%; padding:10px; background:none; border:none; border-top:1px solid rgba(255,255,255,0.06);
+  color:var(--text-muted); font-size:12px; font-weight:600; font-family:var(--font);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;
+  transition:color 0.2s;
+}
+.fandom-more-btn:active { color:var(--text-secondary); }
+.fandom-more-arrow { transition:transform 0.3s; display:inline-block; }
+.fandom-more-arrow.open { transform:rotate(180deg); }
+
+/* ═══════════════════════════════
+   주간·월간 결과 섹션 (차트 상단)
+═══════════════════════════════ */
+.result-section {
+  margin:10px 16px 4px;
+  border-radius:var(--radius);
+  overflow:hidden;
+}
+/* 주간 결과 */
+.weekly-result {
+  background:linear-gradient(135deg,rgba(36,36,216,0.2),rgba(22,163,74,0.12));
+  border:1px solid rgba(255,255,255,0.1);
+}
+/* 월간 결과 */
+.monthly-result {
+  background:linear-gradient(135deg,rgba(124,58,237,0.2),rgba(236,72,153,0.12));
+  border:1px solid rgba(255,255,255,0.1);
+}
+.result-header { padding:13px 14px 10px; }
+.result-title { font-size:13px; font-weight:800; color:#fff; margin-bottom:2px; }
+.result-desc { font-size:11px; color:var(--text-muted); }
+.result-podium { display:flex; align-items:flex-end; gap:6px; padding:10px 14px 12px; }
+.podium-item { flex:1; text-align:center; }
+.podium-item.first { order:2; }
+.podium-item.second { order:1; }
+.podium-item.third { order:3; }
+.podium-emoji-wrap { position:relative; display:inline-block; margin-bottom:4px; }
+.podium-emoji { font-size:22px; }
+.podium-crown { position:absolute; top:-10px; left:50%; transform:translateX(-50%); font-size:14px; }
+.podium-name { font-size:10px; color:rgba(255,255,255,0.6); font-weight:600; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.podium-count { font-size:13px; font-weight:800; color:#fff; }
+.podium-bar-section { display:flex; align-items:flex-end; gap:6px; padding:0 14px; height:36px; }
+.podium-bar-col { flex:1; display:flex; align-items:flex-end; justify-content:center; }
+.podium-bar { width:100%; border-radius:3px 3px 0 0; }
+.result-total { padding:10px 14px 13px; border-top:1px solid rgba(255,255,255,0.08); display:flex; justify-content:space-between; align-items:center; }
+.result-total-text { font-size:11px; color:var(--text-muted); }
+.result-total-text strong { color:#fff; }
+.result-share-btn { font-size:10px; font-weight:700; color:var(--primary); background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); border-radius:100px; padding:4px 10px; cursor:pointer; font-family:var(--font); }
+
+/* 아티스트 행 */
+.artist-row { display:flex; align-items:center; padding:11px 20px; cursor:pointer; transition:background 0.15s; border-bottom:1px solid rgba(255,255,255,0.04); }
+.artist-row:active { background:rgba(255,255,255,0.04); }
+.rank-num { width:34px; text-align:center; flex-shrink:0; }
+.rank-num .num { font-size:19px; font-weight:800; color:#fff; }
+.rank-num .change { font-size:10px; font-weight:600; margin-top:1px; }
+.ch-new{color:var(--primary);} .ch-up{color:#22C55E;} .ch-dn{color:#EF4444;} .ch-sm{color:var(--text-muted);}
+.artist-img { width:50px; height:50px; border-radius:50%; margin:0 12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.img-jennie{background:linear-gradient(135deg,#8B4513,#CD853F);}
+.img-ive{background:linear-gradient(135deg,#1a1a4a,#6a1a6a);}
+.img-cortis{background:linear-gradient(135deg,#1a3a1a,#3a3a1a);}
+.img-aespa{background:linear-gradient(135deg,#3a1a4a,#1a1a4a);}
+.img-le{background:linear-gradient(135deg,#4a1a1a,#1a2a4a);}
+.artist-name { flex:1; font-size:15px; font-weight:600; color:#fff; }
+.row-toggle { width:28px; height:28px; background:var(--surface-2); border:none; border-radius:50%; color:var(--text-secondary); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:11px; transition:all 0.25s; flex-shrink:0; }
+.row-toggle.open { background:var(--accent); color:#fff; transform:rotate(180deg); }
+
+/* 확장 카드 */
+.expand-card { background:var(--card-blue); border-radius:var(--radius); margin:0 16px 8px; overflow:hidden; animation:slideDown 0.22s ease; }
+@keyframes slideDown { from{opacity:0;transform:translateY(-5px);} to{opacity:1;transform:translateY(0);} }
+.expand-inner { padding:14px 16px 10px; }
+.section-title { font-size:11px; font-weight:700; color:rgba(255,255,255,0.45); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em; }
+.country-ranks { display:grid; grid-template-columns:1fr 1fr 1fr; background:rgba(0,0,0,0.2); border-radius:var(--radius-sm); overflow:hidden; margin-bottom:12px; }
+.country-item { text-align:center; padding:9px 4px; }
+.country-item+.country-item { border-left:1px solid rgba(255,255,255,0.1); }
+.country-flag { font-size:16px; margin-bottom:2px; }
+.country-name { font-size:10px; color:rgba(255,255,255,0.45); margin-bottom:3px; }
+.country-rank { font-size:20px; font-weight:800; color:#fff; }
+.divider { height:1px; background:rgba(255,255,255,0.12); margin:10px 0; }
+.song-row { display:flex; align-items:center; gap:10px; }
+.song-thumb { width:36px; height:36px; border-radius:7px; background:linear-gradient(135deg,#1a1a4a,#2a2a6a); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.song-info { flex:1; }
+.song-title { font-size:12px; font-weight:700; color:#fff; }
+.song-artist { font-size:10px; color:rgba(255,255,255,0.5); margin-top:1px; }
+.play-btn { width:28px; height:28px; background:linear-gradient(135deg,#7C3AED,#22C55E); border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:11px; color:#fff; flex-shrink:0; }
+
+/* 일간 반응 (파란 블록) */
+.reaction-section { padding:10px 16px 14px; border-top:1px solid rgba(255,255,255,0.1); }
+.reaction-label-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.reaction-label { font-size:11px; color:rgba(255,255,255,0.45); font-weight:600; }
+.reaction-no-login { font-size:10px; color:var(--primary); font-weight:600; }
+.reaction-btns { display:flex; gap:7px; }
+.reaction-btn { display:flex; align-items:center; gap:4px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.1); border-radius:100px; padding:7px 13px; font-size:13px; color:rgba(255,255,255,0.85); cursor:pointer; font-family:var(--font); transition:all 0.18s; }
+.reaction-btn.active { background:rgba(34,197,94,0.15); border-color:var(--primary); color:var(--primary); transform:scale(1.05); }
+.reaction-btn:active { transform:scale(0.95); }
+.reaction-count { font-size:12px; font-weight:600; }
+
+/* 주간·월간 반응 결과 (파란 블록) */
+.result-in-card { padding:12px 16px 14px; border-top:1px solid rgba(255,255,255,0.1); }
+.result-in-card-title { font-size:12px; font-weight:700; color:rgba(255,255,255,0.55); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+.result-in-card-rank { font-size:11px; font-weight:700; color:var(--primary); }
+.result-bar-list { display:flex; flex-direction:column; gap:6px; margin-bottom:8px; }
+.result-bar-row { display:flex; align-items:center; gap:8px; }
+.result-bar-emoji { font-size:16px; flex-shrink:0; width:20px; text-align:center; }
+.result-bar-track { flex:1; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; }
+.result-bar-fill { height:100%; border-radius:3px; }
+.result-bar-num { font-size:11px; font-weight:700; color:rgba(255,255,255,0.65); width:36px; text-align:right; flex-shrink:0; }
+.result-total-row { font-size:11px; color:rgba(255,255,255,0.4); padding-top:6px; border-top:1px solid rgba(255,255,255,0.08); }
+.result-total-row strong { color:rgba(255,255,255,0.8); }
+
+/* 롤링 */
+.msg-rolling-section { padding:0 16px 0; }
+.msg-rolling-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; }
+.msg-rolling-title { font-size:11px; font-weight:700; color:rgba(255,255,255,0.6); }
+.msg-count-badge { font-size:10px; font-weight:600; color:rgba(255,255,255,0.3); }
+.rolling-window { height:48px; overflow:hidden; position:relative; border-radius:var(--radius-sm); background:rgba(0,0,0,0.22); }
+.rolling-track { position:absolute; top:0; left:0; right:0; transition:transform 0.52s cubic-bezier(0.25,0.46,0.45,0.94); }
+.rolling-item { height:48px; display:flex; align-items:center; gap:8px; padding:0 11px; }
+.rolling-avatar { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; flex-shrink:0; }
+.rolling-body { flex:1; min-width:0; }
+.rolling-user { font-size:10px; color:rgba(255,255,255,0.35); font-weight:600; margin-bottom:2px; }
+.rolling-text { font-size:12px; color:rgba(255,255,255,0.9); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.rolling-flag { font-size:14px; flex-shrink:0; }
+.default-msg { height:48px; display:flex; align-items:center; gap:9px; padding:0 11px; background:rgba(0,0,0,0.22); border-radius:var(--radius-sm); }
+.default-msg-label { font-size:10px; color:var(--primary); font-weight:700; margin-bottom:1px; }
+.default-msg-text { font-size:11px; color:rgba(255,255,255,0.78); line-height:1.3; }
+
+/* CTA */
+.card-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:10px 16px 14px; }
+.btn-all { padding:10px; background:rgba(255,255,255,0.1); border:1.5px solid rgba(255,255,255,0.15); border-radius:var(--radius-sm); color:rgba(255,255,255,0.8); font-size:12px; font-weight:600; font-family:var(--font); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; transition:all 0.2s; }
+.btn-write { padding:10px; background:var(--primary); border:none; border-radius:var(--radius-sm); color:#000; font-size:12px; font-weight:700; font-family:var(--font); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; transition:all 0.2s; }
+.btn-write:active { background:var(--primary-dark); transform:scale(0.97); }
+
+/* 네비 */
+.nav-bar { position:absolute; bottom:0; left:0; right:0; height:76px; background:rgba(10,10,10,0.97); backdrop-filter:blur(12px); border-top:1px solid rgba(255,255,255,0.07); display:flex; justify-content:space-around; align-items:center; padding-bottom:14px; z-index:100; }
+.nav-item { display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; }
+.nav-icon { font-size:20px; }
+.nav-label { font-size:10px; color:var(--text-muted); font-weight:500; }
+
+/* 상세 페이지 */
+.detail-page { position:absolute; inset:0; background:var(--bg); z-index:50; transform:translateX(100%); transition:transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94); display:flex; flex-direction:column; }
+.detail-page.open { transform:translateX(0); }
+.detail-header { background:linear-gradient(160deg,var(--card-blue) 0%,var(--card-blue-dark) 100%); padding:0 20px 16px; flex-shrink:0; }
+.detail-status { display:flex; justify-content:space-between; padding:11px 0 6px; font-size:12px; font-weight:700; color:#fff; }
+.detail-nav { display:flex; justify-content:space-between; align-items:center; margin-bottom:13px; }
+.detail-back { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.12); border:none; border-radius:100px; padding:6px 13px; color:#fff; font-size:13px; font-weight:600; font-family:var(--font); cursor:pointer; }
+.detail-badge { background:rgba(255,255,255,0.14); border-radius:100px; padding:5px 11px; font-size:11px; color:rgba(255,255,255,0.85); font-weight:700; }
+.detail-artist-row { display:flex; align-items:center; gap:12px; }
+.detail-artist-img { width:54px; height:54px; border-radius:50%; border:2px solid rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+.detail-artist-name { font-size:20px; font-weight:800; color:#fff; letter-spacing:-0.02em; }
+.detail-artist-meta { font-size:11px; color:rgba(255,255,255,0.45); margin-top:2px; font-weight:500; }
+.detail-trophy { font-size:28px; margin-left:auto; }
+.detail-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:rgba(255,255,255,0.08); margin:12px 20px 0; border-radius:var(--radius-sm); overflow:hidden; flex-shrink:0; }
+.stat-item { background:var(--surface); padding:10px 6px; text-align:center; }
+.stat-flag { font-size:14px; margin-bottom:2px; }
+.stat-label { font-size:10px; color:var(--text-muted); margin-bottom:2px; }
+.stat-value { font-size:15px; font-weight:800; color:#fff; }
+.detail-participation { display:flex; justify-content:space-between; align-items:center; padding:9px 20px 5px; flex-shrink:0; }
+.participation-text { font-size:13px; color:var(--text-secondary); }
+.participation-text strong { color:#fff; }
+.participation-countries { font-size:11px; color:var(--text-muted); }
+.detail-msg-list { flex:1; overflow-y:auto; padding:0 20px 8px; }
+.detail-msg-list::-webkit-scrollbar { display:none; }
+.detail-msg-item { background:var(--surface); border-radius:var(--radius-sm); padding:12px; margin-bottom:8px; animation:fadeUp 0.25s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(5px);} to{opacity:1;transform:translateY(0);} }
+.detail-msg-item.official { background:rgba(34,197,94,0.07); border:1px solid rgba(34,197,94,0.2); }
+.official-badge { display:inline-flex; align-items:center; gap:3px; background:var(--primary); color:#000; font-size:10px; font-weight:700; padding:2px 7px; border-radius:100px; margin-bottom:6px; }
+.detail-msg-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.detail-msg-user { display:flex; align-items:center; gap:6px; }
+.detail-msg-avatar { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; }
+.detail-msg-name { font-size:12px; font-weight:700; color:var(--text-secondary); }
+.detail-msg-flag { font-size:13px; }
+.detail-msg-time { font-size:11px; color:var(--text-muted); }
+.detail-msg-text { font-size:14px; color:#fff; line-height:1.5; }
+.detail-msg-like { display:flex; align-items:center; gap:4px; margin-top:8px; font-size:12px; color:var(--text-muted); cursor:pointer; }
+.detail-input-bar { flex-shrink:0; background:rgba(10,10,10,0.97); backdrop-filter:blur(16px); border-top:1px solid rgba(255,255,255,0.08); padding:10px 16px 26px; }
+.detail-input-context { font-size:11px; color:var(--text-muted); margin-bottom:6px; }
+.detail-input-context .artist-tag { color:var(--primary); font-weight:700; }
+.detail-input-row { display:flex; gap:8px; align-items:center; }
+.detail-input { flex:1; background:var(--surface-2); border:1.5px solid rgba(255,255,255,0.1); border-radius:var(--radius-sm); padding:10px 13px; color:#fff; font-size:14px; font-family:var(--font); outline:none; height:42px; transition:border-color 0.2s; }
+.detail-input:focus { border-color:var(--primary); }
+.detail-input::placeholder { color:var(--text-muted); }
+.detail-send-btn { width:42px; height:42px; background:var(--primary); color:#000; border:none; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; }
+.detail-send-btn:active { transform:scale(0.92); }
+
+/* 바텀시트 공통 */
+.overlay { position:absolute; inset:0; background:rgba(0,0,0,0.72); backdrop-filter:blur(5px); display:flex; align-items:flex-end; z-index:200; opacity:0; pointer-events:none; transition:opacity 0.25s; }
+.overlay.show { opacity:1; pointer-events:all; }
+.sheet { width:100%; background:#191919; border-radius:22px 22px 0 0; transform:translateY(100%); transition:transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94); }
+.overlay.show .sheet { transform:translateY(0); }
+.sheet-handle { width:34px; height:4px; background:rgba(255,255,255,0.15); border-radius:2px; margin:14px auto 0; }
+.sheet-title { font-size:16px; font-weight:800; color:#fff; padding:14px 20px 2px; }
+.sheet-sub { font-size:12px; color:var(--text-muted); padding:0 20px 12px; }
+.date-list { max-height:320px; overflow-y:auto; padding-bottom:20px; }
+.date-list::-webkit-scrollbar { display:none; }
+.date-row { display:flex; align-items:center; padding:12px 20px; cursor:pointer; transition:background 0.15s; border-bottom:1px solid rgba(255,255,255,0.05); }
+.date-row:active { background:rgba(255,255,255,0.05); }
+.date-row.selected { background:rgba(34,197,94,0.07); }
+.date-row-left { flex:1; }
+.date-row-period { font-size:14px; font-weight:700; color:#fff; margin-bottom:3px; }
+.date-row.selected .date-row-period { color:var(--primary); }
+.date-row-artist { display:flex; align-items:center; gap:5px; }
+.date-row-rank { font-size:11px; color:var(--text-muted); font-weight:600; }
+.date-row-emoji { font-size:16px; }
+.date-row-name { font-size:12px; color:var(--text-secondary); font-weight:600; }
+.date-msg-count { font-size:10px; color:var(--text-muted); margin-top:2px; }
+.date-check { font-size:15px; color:var(--primary); opacity:0; }
+.date-row.selected .date-check { opacity:1; }
+.login-inner { padding:14px 20px 36px; }
+.login-emoji { font-size:32px; margin-bottom:10px; }
+.login-title { font-size:17px; font-weight:800; color:#fff; margin-bottom:4px; }
+.login-sub { font-size:13px; color:var(--text-secondary); margin-bottom:20px; line-height:1.6; }
+.social-btn { width:100%; padding:13px; border-radius:var(--radius-sm); border:none; font-size:14px; font-weight:700; font-family:var(--font); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:9px; margin-bottom:9px; }
+.google-btn { background:#fff; color:#1a1a1a; }
+.apple-btn { background:#1a1a1a; color:#fff; border:1px solid #333; }
+.login-cancel { width:100%; background:none; border:none; font-size:13px; color:var(--text-muted); font-family:var(--font); cursor:pointer; padding:8px; }
+
+/* 토스트 */
+.toast { position:absolute; top:60px; left:50%; transform:translateX(-50%); background:var(--primary); color:#000; padding:9px 18px; border-radius:100px; font-size:12px; font-weight:700; white-space:nowrap; z-index:999; opacity:0; transition:opacity 0.3s; pointer-events:none; }
+.toast.show { opacity:1; }
+
+/* 응원하기 버튼 */
+.cheer-btn { display:flex; align-items:center; gap:3px; padding:5px 10px; border-radius:100px; border:1px solid rgba(255,255,255,0.12); background:transparent; color:var(--text-secondary); font-size:11px; font-weight:700; font-family:var(--font); cursor:pointer; transition:all 0.18s; flex-shrink:0; margin-right:6px; }
+.cheer-btn:active { transform:scale(0.93); }
+.cheer-btn.cheered { border-color:var(--primary); background:rgba(34,197,94,0.1); color:var(--primary); }
+.cheer-btn .cheer-icon { font-size:13px; transition:transform 0.2s; }
+.cheer-btn.cheered .cheer-icon { animation:heartPop 0.3s ease; }
+@keyframes heartPop { 0%{transform:scale(1)} 50%{transform:scale(1.4)} 100%{transform:scale(1)} }
+.cheer-cnt { font-size:11px; font-weight:700; }
+
+/* 로그인 유도 토스트 (하단 고정) */
+.login-nudge-toast { position:absolute; bottom:90px; left:12px; right:12px; background:#1c1c1c; border:0.5px solid rgba(255,255,255,0.15); border-radius:12px; padding:11px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px; z-index:500; opacity:0; transform:translateY(8px); pointer-events:none; transition:all 0.3s; }
+.login-nudge-toast.show { opacity:1; transform:translateY(0); pointer-events:all; }
+.nudge-txt { font-size:11px; color:#ccc; line-height:1.4; }
+.nudge-txt b { color:#fff; }
+.nudge-login-btn { font-size:11px; font-weight:700; color:var(--primary); border:1px solid var(--primary); border-radius:8px; padding:5px 10px; background:none; white-space:nowrap; flex-shrink:0; font-family:var(--font); cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="phone-wrap">
+  <div class="phone-label">비로그인</div>
+  <div class="phone" id="phone-nologin"></div>
+</div>
+<div class="phone-wrap">
+  <div class="phone-label">구글 로그인 (1일 1회)</div>
+  <div class="phone" id="phone-guest"></div>
+</div>
+<div class="phone-wrap">
+  <div class="phone-label">베리즈 · 멜론 로그인 (1시간 1회)</div>
+  <div class="phone" id="phone-loggedin"></div>
+</div>
+<script>
+(function() {
+
+var ARTISTS = [
+  {id:1,num:'1',chg:'NEW',chCls:'ch-new',img:'img-jennie',emoji:'👩‍🦰',name:'제니 (JENNIE)',kor:'1위',chn:'2위',jpn:'1위',song:'LIKE JENNIE',cnt:248000},
+  {id:2,num:'2',chg:'–',chCls:'ch-sm',img:'img-ive',emoji:'👯',name:'IVE (아이브)',kor:'3위',chn:'1위',jpn:'2위',song:'REBEL HEART',cnt:182000},
+  {id:3,num:'3',chg:'▲3',chCls:'ch-up',img:'img-cortis',emoji:'🎸',name:'CORTIS (코르티스)',kor:'2위',chn:'4위',jpn:'3위',song:'Starlight',cnt:91000},
+  {id:4,num:'4',chg:'▼2',chCls:'ch-dn',img:'img-aespa',emoji:'🤖',name:'aespa',kor:'4위',chn:'3위',jpn:'5위',song:'Whiplash',cnt:124000},
+  {id:5,num:'5',chg:'▲2',chCls:'ch-up',img:'img-le',emoji:'🌟',name:'LE SSERAFIM',kor:'5위',chn:'6위',jpn:'4위',song:'EASY',cnt:87000}
+];
+
+var FANDOM_RANK = [
+  {pos:'1',pcls:'top1',emoji:'🤖',name:'aespa',fan:'MY',w:'100%',bar:'#22C55E,#16A34A',cnt:'12,400',chg:'▲2',chcls:'change-up'},
+  {pos:'2',pcls:'top2',emoji:'👯',name:'IVE (아이브)',fan:'DIVE',w:'79%',bar:'#a855f7,#ec4899',cnt:'9,800',chg:'–',chcls:'change-same'},
+  {pos:'3',pcls:'top3',emoji:'👩‍🦰',name:'제니 (JENNIE)',fan:'BLINK',w:'64%',bar:'#f59e0b,#ef4444',cnt:'7,900',chg:'▼1',chcls:'change-down'},
+  {pos:'4',pcls:'',emoji:'🎸',name:'CORTIS (코르티스)',fan:'CORE',w:'34%',bar:'#06b6d4,#3b82f6',cnt:'4,200',chg:'▲1',chcls:'change-up',extra:true},
+  {pos:'5',pcls:'',emoji:'🌟',name:'LE SSERAFIM',fan:'FEARNOT',w:'25%',bar:'#FF6B6B,#FF8E53',cnt:'3,100',chg:'–',chcls:'change-same',extra:true}
+];
+
+function fmt(n){ return n>=10000?(n/10000).toFixed(1)+'만':n.toLocaleString(); }
+
+function buildScreen(phoneId, isLoggedIn) {
+  var phone = document.getElementById(phoneId);
+  var id = isLoggedIn ? 'lg' : 'gu';
+  var counts = {};
+  ARTISTS.forEach(function(a){ counts[a.id] = a.cnt; });
+  var cheered = {};
+  var relayDay = isLoggedIn ? 3 : 0;
+  var relayTotal = isLoggedIn ? 27 : 0;
+  var currentTab = 'daily';
+  var openedRows = {};
+  var fandomExpanded = false;
+  var nudgeTimer = null;
+
+  function el(selector){ return phone.querySelector(selector); }
+  function byId(sid){ return document.getElementById(id+'-'+sid); }
+
+  // ── HTML 생성
+  var fandomHtml = FANDOM_RANK.map(function(r){
+    var extraAttr = r.extra ? ' id="'+id+'-rank-extra" style="display:none"' : '';
+    if(r.extra && r.pos==='5') extraAttr = ' id="'+id+'-rank-extra2" style="display:none"';
+    if(r.extra && r.pos==='4') extraAttr = ' id="'+id+'-rank-extra1" style="display:none"';
+    return '<div class="fandom-rank-item"'+extraAttr+'>'
+      +'<div class="fandom-rank-pos '+r.pcls+'">'+r.pos+'</div>'
+      +'<div class="fandom-rank-emoji">'+r.emoji+'</div>'
+      +'<div class="fandom-rank-info">'
+        +'<div class="fandom-rank-name">'+r.name+'</div>'
+        +'<div class="fandom-rank-fandom">'+r.fan+'</div>'
+        +'<div class="fandom-rank-bar-wrap"><div class="fandom-rank-bar" style="width:'+r.w+';background:linear-gradient(90deg,'+r.bar+')"></div></div>'
+      +'</div>'
+      +'<div class="fandom-rank-count">'+r.cnt+'</div>'
+      +'<div class="fandom-rank-change '+r.chcls+'">'+r.chg+'</div>'
+      +'</div>';
+  }).join('');
+
+  var artistsHtml = ARTISTS.map(function(a){
+    return '<div class="artist-row" onclick="window._ph[\''+id+'\'].toggle('+a.id+')">'
+      +'<div class="rank-num"><div class="num">'+a.num+'</div><div class="change '+a.chCls+'">'+a.chg+'</div></div>'
+      +'<div class="artist-img '+a.img+'">'+a.emoji+'</div>'
+      +'<div class="artist-name">'+a.name+'</div>'
+      +'<button class="cheer-btn" id="'+id+'-cb-'+a.id+'" onclick="event.stopPropagation();window._ph[\''+id+'\'].cheer('+a.id+')">'
+        +'<span class="cheer-icon">🤍</span><span class="cheer-cnt" id="'+id+'-cc-'+a.id+'">'+fmt(a.cnt)+'</span>'
+      +'</button>'
+      +'<button class="row-toggle" id="'+id+'-tog-'+a.id+'">▼</button>'
+      +'</div>'
+      +'<div id="'+id+'-exp-'+a.id+'" style="display:none">'
+        +'<div class="expand-card"><div class="expand-inner">'
+          +'<div class="section-title">국가별 순위</div>'
+          +'<div class="country-ranks">'
+            +'<div class="country-item"><div class="country-flag">🇰🇷</div><div class="country-name">한국</div><div class="country-rank">'+a.kor+'</div></div>'
+            +'<div class="country-item"><div class="country-flag">🇨🇳</div><div class="country-name">중국</div><div class="country-rank">'+a.chn+'</div></div>'
+            +'<div class="country-item"><div class="country-flag">🇯🇵</div><div class="country-name">일본</div><div class="country-rank">'+a.jpn+'</div></div>'
+          +'</div>'
+          +'<div class="divider"></div>'
+          +'<div class="section-title">최근 인기곡</div>'
+          +'<div class="song-row">'
+            +'<div class="song-thumb">🎵</div>'
+            +'<div class="song-info"><div class="song-title">'+a.song+'</div><div class="song-artist">'+a.name+'</div></div>'
+            +'<button class="play-btn">▶</button>'
+          +'</div>'
+        +'</div></div>'
+      +'</div>';
+  }).join('');
+
+  var loginBadge = isLoggedIn
+    ? '<div style="font-size:11px;color:#22C55E;font-weight:700">● 베리즈 · 멜론 로그인</div>'
+    : '<div style="font-size:11px;color:#4285F4;font-weight:700">● 구글 로그인</div>';
+
+  var nudgeHtml = isLoggedIn
+    ? '<div class="login-nudge-toast" id="'+id+'-nudge"><div class="nudge-txt" id="'+id+'-nudge-txt">응원 완료🎉 내 링크로 <b>오늘 '+relayDay+'명 · 누적 '+relayTotal+'명</b>이 응원했어요</div><button class="nudge-login-btn" onclick="window._ph[\''+id+'\'].share()">공유하기 ↗</button></div>'
+    : '<div class="login-nudge-toast" id="'+id+'-nudge" style="flex-direction:column;align-items:flex-start;gap:6px">'
+        +'<div class="nudge-txt">오늘 응원 완료! 내일 자정 이후 다시 응원할 수 있어요 💚</div>'
+        +'<div style="width:100%;padding-top:6px;border-top:0.5px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:space-between">'
+          +'<div style="font-size:10px;color:#888">멜론·베리즈로 로그인하면 <b style="color:#fff">매시간</b> 응원 가능해요</div>'
+          +'<button class="nudge-login-btn" onclick="window._ph[\''+id+'\'].openLogin()">전환하기</button>'
+        +'</div>'
+      +'</div>';
+
+  var loginSheetHtml = !isLoggedIn
+    ? '<div class="overlay" id="'+id+'-login-sheet" onclick="if(event.target.id===\''+id+'-login-sheet\')this.classList.remove(\'show\')">'
+      +'<div class="sheet"><div class="sheet-handle"></div>'
+      +'<div class="login-inner">'
+        +'<div class="login-emoji">⚡</div>'
+        +'<div class="login-title">매시간 응원하기</div>'
+        +'<div class="login-sub">멜론 또는 베리즈 계정으로 전환하면<br>1시간마다 응원 + 릴레이 링크 공유가 가능해요.</div>'
+        +'<button class="social-btn" style="background:#05C147;color:#000;font-weight:800;margin-bottom:8px" onclick="window._ph[\''+id+'\'].loginDone()">'
+          +'멜론 계정으로 전환하기'
+        +'</button>'
+        +'<button class="social-btn apple-btn" style="margin-bottom:0" onclick="window._ph[\''+id+'\'].loginDone()">'
+          +'베리즈 계정으로 전환하기'
+        +'</button>'
+        +'<button class="login-cancel" onclick="document.getElementById(\''+id+'-login-sheet\').classList.remove(\'show\')">나중에</button>'
+      +'</div></div></div>'
+    : '';
+
+  var weeklyResultHtml =
+    '<div id="'+id+'-weekly-result" style="display:none">'
+    +'<div class="result-section weekly-result">'
+      +'<div class="result-header">'
+        +'<div class="result-title">🏅 이번 주 팬덤 응원 결과</div>'
+        +'<div class="result-desc">1월 3주차 · 주간 누적 응원 집계</div>'
+      +'</div>'
+      +'<div style="padding:0 14px">'
+        +'<div style="display:flex;align-items:flex-end;gap:6px;height:80px">'
+          +'<div style="flex:1;text-align:center">'
+            +'<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:3px">👯 DIVE</div>'
+            +'<div style="font-size:11px;font-weight:800;color:#C0C0C0;margin-bottom:3px">9,800</div>'
+            +'<div style="height:44px;background:linear-gradient(180deg,rgba(192,192,192,0.4),rgba(192,192,192,0.15));border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;font-size:16px">🥈</div>'
+          +'</div>'
+          +'<div style="flex:1;text-align:center">'
+            +'<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:3px">🤖 MY</div>'
+            +'<div style="font-size:11px;font-weight:800;color:#FFD700;margin-bottom:3px">12,400</div>'
+            +'<div style="height:64px;background:linear-gradient(180deg,rgba(255,215,0,0.4),rgba(255,215,0,0.15));border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;font-size:16px">🥇</div>'
+          +'</div>'
+          +'<div style="flex:1;text-align:center">'
+            +'<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:3px">👩‍🦰 BLINK</div>'
+            +'<div style="font-size:11px;font-weight:800;color:#CD7F32;margin-bottom:3px">7,900</div>'
+            +'<div style="height:32px;background:linear-gradient(180deg,rgba(205,127,50,0.4),rgba(205,127,50,0.15));border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;font-size:16px">🥉</div>'
+          +'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="result-total">'
+        +'<div class="result-total-text">이번 주 전체 응원 <strong>34,100개</strong> · 5개 팬덤 참여</div>'
+        +'<button class="result-share-btn">공유 ↑</button>'
+      +'</div>'
+    +'</div>'
+    +'</div>';
+
+  var monthlyResultHtml =
+    '<div id="'+id+'-monthly-result" style="display:none">'
+    +'<div class="result-section monthly-result">'
+      +'<div class="result-header">'
+        +'<div class="result-title">🗓 이번 달 팬덤 응원 결과</div>'
+        +'<div class="result-desc">2025년 1월 · 월간 누적 응원 집계</div>'
+      +'</div>'
+      +'<div style="padding:0 14px">'
+        +'<div style="display:flex;align-items:flex-end;gap:6px;height:80px">'
+          +'<div style="flex:1;text-align:center">'
+            +'<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:3px">👯 DIVE</div>'
+            +'<div style="font-size:11px;font-weight:800;color:#C0C0C0;margin-bottom:3px">38,200</div>'
+            +'<div style="height:48px;background:linear-gradient(180deg,rgba(192,192,192,0.4),rgba(192,192,192,0.15));border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;font-size:16px">🥈</div>'
+          +'</div>'
+          +'<div style="flex:1;text-align:center">'
+            +'<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:3px">👩‍🦰 BLINK</div>'
+            +'<div style="font-size:11px;font-weight:800;color:#FFD700;margin-bottom:3px">51,300</div>'
+            +'<div style="height:64px;background:linear-gradient(180deg,rgba(255,215,0,0.4),rgba(255,215,0,0.15));border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;font-size:16px">🥇</div>'
+          +'</div>'
+          +'<div style="flex:1;text-align:center">'
+            +'<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:3px">🤖 MY</div>'
+            +'<div style="font-size:11px;font-weight:800;color:#CD7F32;margin-bottom:3px">29,800</div>'
+            +'<div style="height:32px;background:linear-gradient(180deg,rgba(205,127,50,0.4),rgba(205,127,50,0.15));border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;font-size:16px">🥉</div>'
+          +'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="result-total">'
+        +'<div class="result-total-text">이번 달 전체 응원 <strong>142,600개</strong> · 5개 팬덤 참여</div>'
+        +'<button class="result-share-btn">공유 ↑</button>'
+      +'</div>'
+    +'</div>'
+    +'</div>';
+
+  phone.innerHTML =
+    '<div class="screen">'
+    +'<div class="status-bar"><span>9:41</span>'
+      +'<div class="status-icons">'
+        +'<svg width="14" height="10" viewBox="0 0 16 12" fill="white"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4" y="2" width="3" height="10" rx="1"/><rect x="8" y="0" width="3" height="12" rx="1"/><rect x="12" y="0" width="3" height="12" rx="1"/></svg>'
+        +'<svg width="20" height="10" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity="0.35"/><rect x="1" y="1" width="16" height="10" rx="3" fill="white"/><path d="M22.5 4v4a2 2 0 000-4z" fill="white" fill-opacity="0.4"/></svg>'
+      +'</div></div>'
+    +'<div class="hero"><div class="hero-bg"></div>'
+      +'<div class="hero-bars"><div class="hero-bar" style="height:34px"></div><div class="hero-bar" style="height:60px"></div><div class="hero-bar" style="height:46px"></div><div class="hero-bar" style="height:82px"></div><div class="hero-bar" style="height:58px"></div><div class="hero-bar" style="height:100px"></div><div class="hero-bar" style="height:74px"></div></div>'
+      +'<div class="hero-content"><div class="hero-nav"><button class="btn-icon">←</button>'+loginBadge+'<button class="btn-icon" style="font-size:12px">↑</button></div>'
+      +'<div class="hero-title">Global <span>K</span>Chart</div></div></div>'
+    +'<div class="chart-tabs">'
+      +'<button class="chart-tab active" id="'+id+'-tab-daily" onclick="window._ph[\''+id+'\'].switchTab(\'daily\')">일간</button>'
+      +'<button class="chart-tab inactive" id="'+id+'-tab-weekly" onclick="window._ph[\''+id+'\'].switchTab(\'weekly\')">주간</button>'
+      +'<button class="chart-tab inactive" id="'+id+'-tab-monthly" onclick="window._ph[\''+id+'\'].switchTab(\'monthly\')">월간</button>'
+    +'</div>'
+    +'<div class="date-bar"><span class="date-text" id="'+id+'-date">2025.01.16</span><button class="chart-info-btn">ⓘ 차트안내</button></div>'
+    +'<div class="scroll-body">'
+      +'<div id="'+id+'-fandom-section" style="display:block">'
+        +'<div class="fandom-rank-section">'
+          +'<div class="fandom-rank-header"><div>'
+            +'<div class="fandom-rank-title"><div class="live-dot"></div> 오늘의 팬덤 응원 순위</div>'
+            +'<div class="fandom-rank-sub">실시간 집계 · 매일 자정 초기화</div>'
+          +'</div></div>'
+          +'<div class="fandom-rank-list">'+fandomHtml+'</div>'
+          +'<button class="fandom-more-btn" id="'+id+'-more-btn" onclick="window._ph[\''+id+'\'].toggleMore()">'
+            +'더보기 <span class="fandom-more-arrow" id="'+id+'-more-arrow">▼</span>'
+          +'</button>'
+        +'</div>'
+      +'</div>'
+      +weeklyResultHtml
+      +monthlyResultHtml
+      +artistsHtml
+    +'</div>'
+    +'<div class="nav-bar">'
+      +'<div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label" style="color:var(--primary)">홈</div></div>'
+      +'<div class="nav-item"><div class="nav-icon">🎧</div><div class="nav-label">ForYou</div></div>'
+      +'<div class="nav-item"><div class="nav-icon">🔍</div><div class="nav-label">탐색</div></div>'
+      +'<div class="nav-item"><div class="nav-icon">📚</div><div class="nav-label">음악서랍</div></div>'
+      +'<div class="nav-item"><div class="nav-icon">···</div><div class="nav-label">바로가기</div></div>'
+    +'</div>'
+    +nudgeHtml
+    +loginSheetHtml
+    +'<div class="toast" id="'+id+'-toast"></div>'
+    +'</div>';
+
+  // ── 컨트롤러
+  if(!window._ph) window._ph = {};
+  window._ph[id] = {
+    switchTab: function(tab) {
+      currentTab = tab;
+      ['daily','weekly','monthly'].forEach(function(t){
+        document.getElementById(id+'-tab-'+t).className = 'chart-tab'+(t===tab?' active':' inactive');
+      });
+      var labels = {daily:'2025.01.16', weekly:'2025.01.09 ~ 2025.01.16', monthly:'2025년 1월'};
+      document.getElementById(id+'-date').textContent = labels[tab];
+      document.getElementById(id+'-fandom-section').style.display = tab==='daily' ? 'block' : 'none';
+      document.getElementById(id+'-weekly-result').style.display = tab==='weekly' ? 'block' : 'none';
+      document.getElementById(id+'-monthly-result').style.display = tab==='monthly' ? 'block' : 'none';
+      phone.querySelectorAll('.cheer-btn').forEach(function(b){
+        b.style.display = tab==='daily' ? 'flex' : 'none';
+      });
+      // 열린 카드 닫기
+      Object.keys(openedRows).forEach(function(n){
+        if(openedRows[n]){
+          var exp = document.getElementById(id+'-exp-'+n);
+          var tog = document.getElementById(id+'-tog-'+n);
+          if(exp) exp.style.display = 'none';
+          if(tog) tog.classList.remove('open');
+          openedRows[n] = false;
+        }
+      });
+    },
+    toggle: function(n) {
+      var exp = document.getElementById(id+'-exp-'+n);
+      var tog = document.getElementById(id+'-tog-'+n);
+      if(!exp) return;
+      openedRows[n] = !openedRows[n];
+      exp.style.display = openedRows[n] ? 'block' : 'none';
+      if(openedRows[n]) tog.classList.add('open'); else tog.classList.remove('open');
+    },
+    toggleMore: function() {
+      fandomExpanded = !fandomExpanded;
+      var ex1 = document.getElementById(id+'-rank-extra1');
+      var ex2 = document.getElementById(id+'-rank-extra2');
+      var arrow = document.getElementById(id+'-more-arrow');
+      var btn = document.getElementById(id+'-more-btn');
+      if(ex1) ex1.style.display = fandomExpanded ? 'flex' : 'none';
+      if(ex2) ex2.style.display = fandomExpanded ? 'flex' : 'none';
+      arrow.classList.toggle('open', fandomExpanded);
+      btn.innerHTML = (fandomExpanded?'접기':'더보기')+' <span class="fandom-more-arrow'+(fandomExpanded?' open':'')+'">▼</span>';
+    },
+    cheer: function(n) {
+      if(currentTab !== 'daily') return;
+      if(cheered[n]) return;
+      cheered[n] = true;
+      counts[n]++;
+      var cb = document.getElementById(id+'-cb-'+n);
+      var cc = document.getElementById(id+'-cc-'+n);
+      cb.classList.add('cheered');
+      cb.querySelector('.cheer-icon').textContent = '💚';
+      cc.textContent = fmt(counts[n]);
+      if(isLoggedIn) {
+        relayDay++;
+        relayTotal++;
+        var ntxt = document.getElementById(id+'-nudge-txt');
+        if(ntxt) ntxt.innerHTML = '응원 완료🎉 내 링크로 <b>오늘 '+relayDay+'명 · 누적 '+relayTotal+'명</b>이 응원했어요';
+      }
+      var nudge = document.getElementById(id+'-nudge');
+      nudge.classList.add('show');
+      if(nudgeTimer) clearTimeout(nudgeTimer);
+      nudgeTimer = setTimeout(function(){ nudge.classList.remove('show'); }, 5000);
+    },
+    openLogin: function() {
+      var sheet = document.getElementById(id+'-login-sheet');
+      if(sheet) sheet.classList.add('show');
+    },
+    loginDone: function() {
+      var sheet = document.getElementById(id+'-login-sheet');
+      if(sheet) sheet.classList.remove('show');
+      var t = document.getElementById(id+'-toast');
+      t.textContent = isLoggedIn ? '✅ 로그인 완료! 매시간 응원할 수 있어요' : '✅ 구글 로그인 완료! 오늘 1회 응원할 수 있어요';
+      t.classList.add('show');
+      setTimeout(function(){ t.classList.remove('show'); }, 2500);
+    },
+    share: function() {
+      var t = document.getElementById(id+'-toast');
+      t.textContent = '🔗 응원 링크가 복사됐어요!';
+      t.classList.add('show');
+      setTimeout(function(){ t.classList.remove('show'); }, 2000);
+    }
+  };
+}
+
+buildScreen('phone-guest', false);
+buildScreen('phone-loggedin', true);
+
+// ── 비로그인 케이스 별도 구성
+(function(){
+  var phone = document.getElementById('phone-nologin');
+  var id = 'nl';
+
+  var artistsHtml = ARTISTS.map(function(a){
+    return '<div class="artist-row" onclick="nlToggle('+a.id+')">'
+      +'<div class="rank-num"><div class="num">'+a.num+'</div><div class="change '+a.chCls+'">'+a.chg+'</div></div>'
+      +'<div class="artist-img '+a.img+'">'+a.emoji+'</div>'
+      +'<div class="artist-name">'+a.name+'</div>'
+      +'<button class="cheer-btn" style="opacity:0.35;cursor:default" onclick="event.stopPropagation();nlOpenLogin()">'
+        +'<span class="cheer-icon">🤍</span><span class="cheer-cnt">'+fmt(a.cnt)+'</span>'
+      +'</button>'
+      +'<button class="row-toggle" id="nl-tog-'+a.id+'">▼</button>'
+      +'</div>'
+      +'<div id="nl-exp-'+a.id+'" style="display:none">'
+        +'<div class="expand-card"><div class="expand-inner">'
+          +'<div class="section-title">국가별 순위</div>'
+          +'<div class="country-ranks">'
+            +'<div class="country-item"><div class="country-flag">🇰🇷</div><div class="country-name">한국</div><div class="country-rank">'+a.kor+'</div></div>'
+            +'<div class="country-item"><div class="country-flag">🇨🇳</div><div class="country-name">중국</div><div class="country-rank">'+a.chn+'</div></div>'
+            +'<div class="country-item"><div class="country-flag">🇯🇵</div><div class="country-name">일본</div><div class="country-rank">'+a.jpn+'</div></div>'
+          +'</div>'
+          +'<div class="divider"></div>'
+          +'<div class="section-title">최근 인기곡</div>'
+          +'<div class="song-row">'
+            +'<div class="song-thumb">🎵</div>'
+            +'<div class="song-info"><div class="song-title">'+a.song+'</div><div class="song-artist">'+a.name+'</div></div>'
+            +'<button class="play-btn">▶</button>'
+          +'</div>'
+          // 응원하기 CTA
+          +'<div style="margin-top:12px;padding:12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:10px;text-align:center">'
+            +'<div style="font-size:12px;color:#ccc;margin-bottom:8px">이 아티스트 응원하기</div>'
+            +'<button onclick="nlOpenLogin()" style="width:100%;padding:9px;background:#05C147;color:#000;font-weight:800;font-size:13px;border:none;border-radius:8px;cursor:pointer;font-family:var(--font)">로그인하고 응원하기 💚</button>'
+          +'</div>'
+        +'</div></div>'
+      +'</div>';
+  }).join('');
+
+  var nlOpenedRows = {};
+  window.nlToggle = function(n){
+    var exp = document.getElementById('nl-exp-'+n);
+    var tog = document.getElementById('nl-tog-'+n);
+    nlOpenedRows[n] = !nlOpenedRows[n];
+    exp.style.display = nlOpenedRows[n] ? 'block' : 'none';
+    if(nlOpenedRows[n]) tog.classList.add('open'); else tog.classList.remove('open');
+  };
+  window.nlOpenLogin = function(){
+    document.getElementById('nl-login-sheet').classList.add('show');
+  };
+
+  phone.innerHTML =
+    '<div class="screen">'
+    +'<div class="status-bar"><span>9:41</span>'
+      +'<div class="status-icons">'
+        +'<svg width="14" height="10" viewBox="0 0 16 12" fill="white"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4" y="2" width="3" height="10" rx="1"/><rect x="8" y="0" width="3" height="12" rx="1"/><rect x="12" y="0" width="3" height="12" rx="1"/></svg>'
+        +'<svg width="20" height="10" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity="0.35"/><rect x="1" y="1" width="16" height="10" rx="3" fill="white"/><path d="M22.5 4v4a2 2 0 000-4z" fill="white" fill-opacity="0.4"/></svg>'
+      +'</div></div>'
+    +'<div class="hero"><div class="hero-bg"></div>'
+      +'<div class="hero-bars"><div class="hero-bar" style="height:34px"></div><div class="hero-bar" style="height:60px"></div><div class="hero-bar" style="height:46px"></div><div class="hero-bar" style="height:82px"></div><div class="hero-bar" style="height:58px"></div><div class="hero-bar" style="height:100px"></div><div class="hero-bar" style="height:74px"></div></div>'
+      +'<div class="hero-content"><div class="hero-nav"><button class="btn-icon">←</button><div style="font-size:11px;color:#666;font-weight:600">비로그인</div><button class="btn-icon" style="font-size:12px">↑</button></div>'
+      +'<div class="hero-title">Global <span>K</span>Chart</div></div></div>'
+    +'<div class="chart-tabs">'
+      +'<button class="chart-tab active">일간</button>'
+      +'<button class="chart-tab inactive">주간</button>'
+      +'<button class="chart-tab inactive">월간</button>'
+    +'</div>'
+    +'<div class="date-bar"><span class="date-text">2025.01.16</span><button class="chart-info-btn">ⓘ 차트안내</button></div>'
+    // 응원 유도 배너
+    +'<div style="margin:10px 16px 4px;padding:12px 14px;background:linear-gradient(135deg,rgba(34,197,94,0.1),rgba(59,130,246,0.08));border:1px solid rgba(34,197,94,0.2);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:8px">'
+      +'<div>'
+        +'<div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:2px">💚 응원하기</div>'
+        +'<div style="font-size:10px;color:#888">로그인하면 좋아하는 아티스트를 응원할 수 있어요</div>'
+      +'</div>'
+      +'<button onclick="nlOpenLogin()" style="padding:6px 12px;background:#05C147;color:#000;font-weight:800;font-size:11px;border:none;border-radius:100px;cursor:pointer;white-space:nowrap;font-family:var(--font)">로그인</button>'
+    +'</div>'
+    +'<div class="scroll-body">'+artistsHtml+'</div>'
+    +'<div class="nav-bar">'
+      +'<div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label" style="color:var(--primary)">홈</div></div>'
+      +'<div class="nav-item"><div class="nav-icon">🎧</div><div class="nav-label">ForYou</div></div>'
+      +'<div class="nav-item"><div class="nav-icon">🔍</div><div class="nav-label">탐색</div></div>'
+      +'<div class="nav-item"><div class="nav-icon">📚</div><div class="nav-label">음악서랍</div></div>'
+      +'<div class="nav-item"><div class="nav-icon">···</div><div class="nav-label">바로가기</div></div>'
+    +'</div>'
+    // 로그인 바텀시트
+    +'<div class="overlay" id="nl-login-sheet" onclick="if(event.target.id===\'nl-login-sheet\')this.classList.remove(\'show\')">'
+      +'<div class="sheet"><div class="sheet-handle"></div>'
+      +'<div class="login-inner">'
+        +'<div class="login-emoji">💚</div>'
+        +'<div class="login-title">응원하기</div>'
+        +'<div class="login-sub">로그인하면 아티스트를 응원할 수 있어요.<br>구글로 간편하게 시작하거나,<br>멜론·베리즈로 로그인하면 매시간 응원 가능해요.</div>'
+        +'<button class="social-btn google-btn" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px">'
+          +'<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>'
+          +'Google로 계속하기 (1일 1회)'
+        +'</button>'
+        +'<div style="font-size:10px;color:#505050;text-align:center;margin-bottom:8px">— 매시간 응원하려면 —</div>'
+        +'<button class="social-btn" style="background:#05C147;color:#000;font-weight:800;margin-bottom:8px">멜론 계정으로 로그인</button>'
+        +'<button class="social-btn apple-btn" style="margin-bottom:0">베리즈 계정으로 로그인</button>'
+        +'<button class="login-cancel" onclick="document.getElementById(\'nl-login-sheet\').classList.remove(\'show\')">취소</button>'
+      +'</div></div></div>'
+    +'</div>';
+})();
+
+})();
+</script>
+</body>
+</html>
