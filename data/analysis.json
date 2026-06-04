@@ -1,0 +1,16 @@
+{
+  "last_updated": "2026-06-04T12:00:00+09:00",
+  "summary": {
+    "total_articles": 0,
+    "positive": 0,
+    "neutral": 0,
+    "negative": 0,
+    "positive_pct": 0,
+    "neutral_pct": 0,
+    "negative_pct": 0
+  },
+  "keywords": [],
+  "articles": [],
+  "sentiment_trend": [],
+  "note": "초기 상태 — GitHub Actions 첫 실행 후 데이터가 채워집니다"
+}
