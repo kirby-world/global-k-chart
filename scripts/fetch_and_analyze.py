@@ -96,10 +96,16 @@ def collect_all_articles() -> list[dict]:
     seen_uids, all_articles = set(), []
     for query in SEARCH_QUERIES:
         print(f"  수집 중: {query}")
-        for article in fetch_google_news_rss(query) + fetch_naver_news_rss(query):
+        for article in fetch_google_news_rss(query):
             if article["uid"] not in seen_uids:
                 seen_uids.add(article["uid"])
                 all_articles.append(article)
+        # 영문 쿼리도 추가 수집
+        if not query.startswith("글") and not query.startswith("멜"):
+            for article in fetch_google_news_rss(query, lang="en"):
+                if article["uid"] not in seen_uids:
+                    seen_uids.add(article["uid"])
+                    all_articles.append(article)
         time.sleep(0.5)
     print(f"  총 수집: {len(all_articles)}건 (중복 제거 후)")
     return all_articles
@@ -110,7 +116,7 @@ def call_gemini(prompt: str) -> str:
     """Google Gemini API 호출 (stdlib만 사용, 무료)"""
     api_key = os.environ.get("GEMINI_API_KEY", "")
     if not api_key:
-        raise EnvironmentError("GEMINI_API_KEY 환경변수가 없습니다")
+        raise EnvironmentError("GEMINI_API_KEY 환경변수가 없습니다. GitHub Secrets 등록 확인 필요.")
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
     payload = json.dumps({
@@ -126,8 +132,12 @@ def call_gemini(prompt: str) -> str:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        data = json.loads(resp.read())
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        raise RuntimeError(f"Gemini API 오류 {e.code}: {body[:500]}")
 
     return data["candidates"][0]["content"]["parts"][0]["text"]
 
