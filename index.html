@@ -1,0 +1,1918 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global-K Chart 론칭 반응 & 인사이트 대시보드</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #080c14;
+    --surface: #0e1520;
+    --surface2: #141d2e;
+    --border: #1e2d42;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --accent4: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --text-dim: #334155;
+    --glow: rgba(0, 212, 255, 0.15);
+    --glow2: rgba(255, 107, 53, 0.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 10% 0%, rgba(0,212,255,0.05) 0%, transparent 50%),
+      radial-gradient(ellipse at 90% 100%, rgba(124,58,237,0.05) 0%, transparent 50%);
+  }
+
+  /* HEADER */
+  .header {
+    padding: 36px 40px 24px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent3), var(--accent), var(--accent2));
+  }
+  .header-meta {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    letter-spacing: 3px;
+    line-height: 1;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent3) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+  .header-sub {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 300;
+  }
+  .header-badges {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .hbadge {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    border: 1px solid;
+    letter-spacing: 1px;
+  }
+  .hbadge.launch { border-color: var(--accent4); color: var(--accent4); background: rgba(16,185,129,0.08); }
+  .hbadge.platform { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
+  .hbadge.date { border-color: var(--text-dim); color: var(--text-muted); }
+
+  /* LAYOUT */
+  .main { padding: 32px 40px 60px; }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* GRID SYSTEM */
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 28px; }
+  .grid-12 { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-bottom: 28px; }
+  .grid-21 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 28px; }
+
+  /* CARD BASE */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: rgba(0,212,255,0.3); }
+  .card-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  /* KPI CARDS */
+  .kpi { text-align: center; }
+  .kpi .num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    letter-spacing: 2px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .kpi .label { font-size: 11px; color: var(--text-muted); }
+  .kpi .sub { font-size: 10px; color: var(--text-dim); margin-top: 3px; font-family: 'Space Mono', monospace; }
+  .kpi.cyan .num { color: var(--accent); text-shadow: 0 0 20px rgba(0,212,255,0.4); }
+  .kpi.orange .num { color: var(--accent2); text-shadow: 0 0 20px rgba(255,107,53,0.4); }
+  .kpi.purple .num { color: var(--accent3); text-shadow: 0 0 20px rgba(124,58,237,0.4); }
+  .kpi.green .num { color: var(--accent4); text-shadow: 0 0 20px rgba(16,185,129,0.4); }
+  .kpi.warn .num { color: var(--warn); text-shadow: 0 0 20px rgba(245,158,11,0.4); }
+
+  /* SENTIMENT CARD */
+  .sentiment-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 10px 0 14px;
+    gap: 2px;
+  }
+  .s-pos { background: var(--accent4); }
+  .s-neu { background: var(--warn); }
+  .s-neg { background: var(--danger); }
+  .sentiment-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .s-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+
+  /* REACTION CARDS */
+  .reaction-item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .reaction-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .r-source {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    text-align: center;
+    padding: 4px 2px;
+    border-radius: 3px;
+    line-height: 1.3;
+    font-weight: 700;
+  }
+  .r-source.domestic { background: rgba(0,212,255,0.12); color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
+  .r-source.intl { background: rgba(124,58,237,0.12); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
+  .r-source.industry { background: rgba(16,185,129,0.12); color: var(--accent4); border: 1px solid rgba(16,185,129,0.3); }
+  .r-source.fan { background: rgba(255,107,53,0.12); color: var(--accent2); border: 1px solid rgba(255,107,53,0.3); }
+  .r-text { font-size: 13px; line-height: 1.5; color: var(--text); }
+  .r-text strong { color: var(--accent); font-weight: 600; }
+  .r-outlet { font-size: 10px; color: var(--text-dim); font-family: 'Space Mono', monospace; margin-top: 3px; }
+  .r-outlet a {
+    color: var(--text-dim);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--text-dim);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .r-outlet a:hover { color: var(--accent); border-color: var(--accent); }
+  .r-tag {
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 2px;
+    font-family: 'Space Mono', monospace;
+    white-space: nowrap;
+    align-self: start;
+    margin-top: 2px;
+  }
+  .r-tag.pos { background: rgba(16,185,129,0.15); color: var(--accent4); border: 1px solid rgba(16,185,129,0.3); }
+  .r-tag.neg { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+  .r-tag.neu { background: rgba(245,158,11,0.15); color: var(--warn); border: 1px solid rgba(245,158,11,0.3); }
+
+  /* INSIGHT CARDS */
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .insight-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+  .insight-card.red::before { background: var(--danger); }
+  .insight-card.orange::before { background: var(--accent2); }
+  .insight-card.cyan::before { background: var(--accent); }
+  .insight-card.green::before { background: var(--accent4); }
+  .insight-card.purple::before { background: var(--accent3); }
+  .insight-card.warn::before { background: var(--warn); }
+
+  .insight-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .insight-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+  .insight-body {
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.7;
+  }
+  .insight-body strong { color: var(--text); }
+  .insight-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .itag {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+  .itag.r { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+  .itag.o { background: rgba(255,107,53,0.12); color: var(--accent2); border: 1px solid rgba(255,107,53,0.25); }
+  .itag.c { background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.25); }
+  .itag.g { background: rgba(16,185,129,0.1); color: var(--accent4); border: 1px solid rgba(16,185,129,0.25); }
+  .itag.p { background: rgba(124,58,237,0.1); color: #a78bfa; border: 1px solid rgba(124,58,237,0.25); }
+  .itag.w { background: rgba(245,158,11,0.1); color: var(--warn); border: 1px solid rgba(245,158,11,0.25); }
+
+  /* DIRECTION CARDS */
+  .dir-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .dir-card::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    opacity: 0.08;
+    transform: translate(20px, -20px);
+  }
+  .dir-card.d1::after { background: var(--accent); }
+  .dir-card.d2::after { background: var(--accent3); }
+  .dir-card.d3::after { background: var(--accent2); }
+  .dir-card.d4::after { background: var(--accent4); }
+  .dir-card.d5::after { background: var(--warn); }
+  .dir-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    opacity: 0.15;
+    position: absolute;
+    top: 12px; right: 16px;
+    letter-spacing: 2px;
+  }
+  .dir-icon { font-size: 24px; margin-bottom: 10px; }
+  .dir-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .dir-body { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+  .dir-priority {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 2px;
+    margin-top: 10px;
+    display: inline-block;
+  }
+  .dir-priority.high { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+  .dir-priority.mid { background: rgba(245,158,11,0.15); color: var(--warn); border: 1px solid rgba(245,158,11,0.25); }
+  .dir-priority.low { background: rgba(16,185,129,0.12); color: var(--accent4); border: 1px solid rgba(16,185,129,0.25); }
+
+  /* CHART CONTAINERS */
+  .chart-wrap { position: relative; height: 220px; }
+  .chart-wrap-sm { position: relative; height: 180px; }
+
+  /* COVERAGE TABLE */
+  .cov-table { width: 100%; border-collapse: collapse; }
+  .cov-table th {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cov-table td {
+    padding: 10px 10px;
+    font-size: 12px;
+    border-bottom: 1px solid rgba(30,45,66,0.5);
+    vertical-align: middle;
+  }
+  .cov-table tr:last-child td { border-bottom: none; }
+  .cov-table tr:hover td { background: rgba(0,212,255,0.03); }
+  .media-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    font-family: 'Space Mono', monospace;
+  }
+  .media-badge.kr { background: rgba(0,212,255,0.1); color: var(--accent); }
+  .media-badge.gl { background: rgba(124,58,237,0.1); color: #a78bfa; }
+  .media-badge.ind { background: rgba(16,185,129,0.1); color: var(--accent4); }
+  .tone-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .tone-p { background: var(--accent4); }
+  .tone-n { background: var(--warn); }
+  .tone-m { background: var(--accent); }
+
+  /* PLATFORM COMPARE */
+  .plat-row {
+    display: grid;
+    grid-template-columns: 80px 1fr 80px;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .plat-row:last-child { border-bottom: none; }
+  .plat-name { font-size: 12px; font-weight: 600; }
+  .plat-sub { font-size: 10px; color: var(--text-dim); }
+  .plat-bar-wrap { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .plat-bar { height: 100%; border-radius: 3px; }
+  .plat-val { font-family: 'Space Mono', monospace; font-size: 11px; text-align: right; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 32px 0; }
+
+  /* SCORE PILL */
+  .score-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+  }
+
+  /* MEDIA SECTION */
+  .media-strip {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .media-chip {
+    flex-shrink: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 14px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .media-chip .chip-outlet { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text-dim); margin-bottom: 2px; }
+  .media-chip .chip-tone { font-size: 10px; }
+
+  /* FOOTER */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+  }
+
+  /* COMMUNITY BOARD */
+  .comm-tab {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 10px 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+    border-radius: 5px 5px 0 0;
+  }
+  .comm-tab:hover { color: var(--text); background: var(--surface); }
+  .comm-tab.active-tab { background: var(--surface); color: var(--text); border-color: var(--border); border-bottom-color: var(--surface); position: relative; z-index: 1; }
+  .comm-panel { border-top: 1px solid var(--border) !important; }
+  .comm-goto {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 5px 12px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,212,255,0.3);
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    text-decoration: none;
+    transition: all 0.15s;
+    letter-spacing: 0.3px;
+  }
+  .comm-goto:hover { opacity: 0.8; }
+  .bilingual-orig {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.7;
+    font-style: italic;
+    margin-bottom: 7px;
+    padding-bottom: 7px;
+    border-bottom: 1px dashed rgba(255,255,255,0.06);
+  }
+  .bilingual-kr {
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.7;
+  }
+  .cfbtn {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 5px 12px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .cfbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .cfbtn.active { background: rgba(0,212,255,0.12); border-color: var(--accent); color: var(--accent); }
+  .cfcount { opacity: 0.6; }
+
+  .comm-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: border-color 0.15s;
+  }
+  .comm-item:hover { border-color: rgba(255,255,255,0.12); }
+  .comm-item[data-tone="neg"] { border-left: 3px solid rgba(239,68,68,0.5); }
+  .comm-item[data-tone="pos"] { border-left: 3px solid rgba(16,185,129,0.5); }
+  .comm-item[data-tone="neu"] { border-left: 3px solid rgba(245,158,11,0.5); }
+
+  .comm-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .comm-src {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .comm-src.theqoo { background: rgba(0,212,255,0.12); color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
+  .comm-src.naver { background: rgba(16,185,129,0.12); color: var(--accent4); border: 1px solid rgba(16,185,129,0.3); }
+  .comm-src.daum { background: rgba(245,158,11,0.1); color: var(--warn); border: 1px solid rgba(245,158,11,0.3); }
+  .comm-src.nate { background: rgba(124,58,237,0.12); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
+  .comm-src.twitter { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.3); }
+
+  .comm-date { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text-dim); }
+  .comm-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    margin-left: auto;
+  }
+  .comm-tag.neg { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+  .comm-tag.pos { background: rgba(16,185,129,0.12); color: var(--accent4); border: 1px solid rgba(16,185,129,0.25); }
+  .comm-tag.neu { background: rgba(245,158,11,0.1); color: var(--warn); border: 1px solid rgba(245,158,11,0.25); }
+
+  .comm-body {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #cbd5e1;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .comm-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .comm-link {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(0,212,255,0.4);
+    transition: border-color 0.15s, color 0.15s;
+    letter-spacing: 0.3px;
+  }
+  .comm-link:hover { color: #fff; border-color: rgba(255,255,255,0.5); }
+  .comm-vote { font-size: 10px; color: var(--text-dim); font-family: 'Space Mono', monospace; }
+
+  @media (max-width: 900px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(2, 1fr); }
+    .grid-12, .grid-21 { grid-template-columns: 1fr; }
+    .main { padding: 20px; }
+    .header { padding: 24px 20px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-meta">Melon × Kakao Entertainment — Intelligence Report</div>
+  <h1>Global-K Chart 론칭 리액션 대시보드</h1>
+  <div class="header-sub">국내외 반응 스크랩 · 핵심 인사이트 · 디벨롭 방향 정리 / 2026.06.01 정식 출시 기준</div>
+  <div class="header-badges">
+    <span class="hbadge launch">🟢 LIVE · 2026.06.01</span>
+    <span class="hbadge platform">Melon × TME × LINE MUSIC</span>
+    <span class="hbadge platform">한·중·일 3국 통합</span>
+    <span class="hbadge date">DATA COLLECTED · 2026.06.04</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- KPI ROW -->
+  <div class="section-label">01 · 론칭 스펙 & 현황 스냅샷</div>
+  <div class="grid-4" style="margin-bottom: 32px;">
+    <div class="card kpi cyan">
+      <div class="num">3</div>
+      <div class="label">참여 플랫폼</div>
+      <div class="sub">Melon · TME · LINE MUSIC</div>
+    </div>
+    <div class="card kpi orange">
+      <div class="num">16억</div>
+      <div class="label">커버 인구</div>
+      <div class="sub">한·중·일 합산 / 전세계 20%</div>
+    </div>
+    <div class="card kpi purple">
+      <div class="num">에스파</div>
+      <div class="label">출시 당일 일/주/월간 ALL #1</div>
+      <div class="sub">3관왕 석권 · SM ENTS</div>
+    </div>
+    <div class="card kpi green">
+      <div class="num">12:00</div>
+      <div class="label">일간 차트 업데이트</div>
+      <div class="sub">전일 24H 기준 · 매일 정오</div>
+    </div>
+  </div>
+
+  <!-- SENTIMENT + COVERAGE MAP -->
+  <div class="grid-12" style="margin-bottom: 32px;">
+    <!-- SENTIMENT -->
+    <div class="card">
+      <div class="card-title">전체 미디어 반응 톤</div>
+      <div class="sentiment-bar">
+        <div class="s-pos" style="width:54%"></div>
+        <div class="s-neu" style="width:31%"></div>
+        <div class="s-neg" style="width:15%"></div>
+      </div>
+      <div class="sentiment-legend" style="margin-bottom:20px;">
+        <span><span class="s-dot" style="background:var(--accent4)"></span>긍정 54%</span>
+        <span><span class="s-dot" style="background:var(--warn)"></span>중립/관망 31%</span>
+        <span><span class="s-dot" style="background:var(--danger)"></span>비판/우려 15%</span>
+      </div>
+      <div style="font-size:12px; color:#94a3b8; line-height:1.8;">
+        <div style="margin-bottom:6px;">✅ <strong style="color:var(--text);">국내 언론</strong> — 대체로 호의적. "빌보드 아티스트 100 역할 할까"</div>
+        <div style="margin-bottom:6px;">🌏 <strong style="color:var(--text);">해외 산업지</strong> — 관심+유보적. 서구 시장 제외 한계 지적</div>
+        <div style="margin-bottom:6px;">🔥 <strong style="color:var(--text);">팬덤 커뮤니티</strong> — 팬덤 활동지수 반영 논란 뜨거움</div>
+        <div>📊 <strong style="color:var(--text);">산업 미디어</strong> — 데이터 투명성 의문 + 확장성 기대 혼재</div>
+      </div>
+    </div>
+
+    <!-- COVERAGE CHART -->
+    <div class="card">
+      <div class="card-title">미디어 채널별 커버리지 분포</div>
+      <div class="chart-wrap">
+        <canvas id="coverageChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- REACTIONS TABLE -->
+  <div class="section-label">02 · 주요 반응 스크랩</div>
+
+  <div class="grid-2" style="margin-bottom: 32px;">
+    <!-- DOMESTIC -->
+    <div class="card">
+      <div class="card-title">🇰🇷 국내 반응</div>
+
+      <div class="reaction-item">
+        <span class="r-source domestic">국내<br>언론</span>
+        <div>
+          <div class="r-text">빌보드 '아티스트 100'의 <strong>K팝 버전 역할</strong>을 할 것으로 기대. 팬덤 활동지수까지 포함한 "전세계 유일한 K팝 차트" 자처</div>
+          <div class="r-outlet"><a href="https://www.fnnews.com/news/202605281157019419" target="_blank">파이낸셜뉴스</a> · <a href="https://www.newsis.com/view/NISX20260528_0003647000" target="_blank">뉴시스</a> · 2026.05.28</div>
+        </div>
+        <span class="r-tag pos">기대감↑</span>
+      </div>
+
+      <div class="reaction-item">
+        <span class="r-source domestic">국내<br>언론</span>
+        <div>
+          <div class="r-text">에스파, 출시 첫날 <strong>일간·주간·월간 1위 모두 석권</strong>. "팬심을 담아낸 결과"</div>
+          <div class="r-outlet"><a href="https://www.dt.co.kr/article/12065343" target="_blank">디지털타임스</a> · 2026.06.01</div>
+        </div>
+        <span class="r-tag pos">성과 부각</span>
+      </div>
+
+      <div class="reaction-item">
+        <span class="r-source domestic">국내<br>언론</span>
+        <div>
+          <div class="r-text">22년 멜론 운영 노하우 + TME 중·동남아 영향력 + LINE 1억 유저 생태계의 <strong>연대로 K팝 표준 제시</strong> 가능</div>
+          <div class="r-outlet"><a href="https://www.mt.co.kr/tech/2026/05/26/2026052608522392908" target="_blank">머니투데이</a> · <a href="https://www.asiae.co.kr/article/2026052609194911200" target="_blank">아시아경제</a> · 2026.05.26</div>
+        </div>
+        <span class="r-tag pos">전략 호평</span>
+      </div>
+
+      <div class="reaction-item">
+        <span class="r-source fan">팬덤<br>커뮤</span>
+        <div>
+          <div class="r-text">팬 활동지수(좋아요·팬맺기) 반영에 대해 <strong>"스트리밍 조작보다 더 쉬운 조작 루트"</strong> 우려. 중국 팬덤의 조직적 클릭 문제 재점화</div>
+          <div class="r-outlet"><a href="https://www.theqoo.net" target="_blank">더쿠</a>·인벤 등 국내 커뮤니티 · 2026.06.01~</div>
+        </div>
+        <span class="r-tag neg">신뢰도 의문</span>
+      </div>
+
+      <div class="reaction-item">
+        <span class="r-source fan">팬덤<br>커뮤</span>
+        <div>
+          <div class="r-text">플랫폼별 팬 활동지수 가중치가 다름에도 <strong>합산 방식·비율 미공개</strong>. "블랙박스 차트"라는 비판</div>
+          <div class="r-outlet"><a href="http://www.osen.co.kr/article/G1112809817" target="_blank">OSEN</a> · <a href="https://zdnet.co.kr/view/?no=20260528181739" target="_blank">ZDNet Korea</a> 집계기준 기사 참고</div>
+        </div>
+        <span class="r-tag neg">투명성 부족</span>
+      </div>
+    </div>
+
+    <!-- INTERNATIONAL -->
+    <div class="card">
+      <div class="card-title">🌐 해외 반응</div>
+
+      <div class="reaction-item">
+        <span class="r-source industry">산업지</span>
+        <div>
+          <div class="r-text">스트리밍 외 <strong>팬 활동 데이터를 공식 집계에 포함</strong>한 K팝 차트는 전례 없음. 팬덤 인텐시티를 측정하는 새 기준 가능성</div>
+          <div class="r-outlet"><a href="https://musically.com/2026/05/28/k-pops-new-global-k-chart-to-include-fan-activity-data/" target="_blank">Music Ally</a> · 2026.05.28</div>
+        </div>
+        <span class="r-tag pos">차별화 인정</span>
+      </div>
+
+      <div class="reaction-item">
+        <span class="r-source industry">산업지</span>
+        <div>
+          <div class="r-text">TME Q1 2026 어닝에서 <strong>블랙핑크·EXO·IVE의 중국 한정 디지털앨범+굿즈 번들</strong> 강세 확인. 차트 론칭 타이밍 최적</div>
+          <div class="r-outlet"><a href="https://www.digitalmusicnews.com/2026/05/28/global-k-chart-launch/" target="_blank">Digital Music News</a> · 2026.05.28</div>
+        </div>
+        <span class="r-tag pos">시장 타이밍</span>
+      </div>
+
+      <div class="reaction-item">
+        <span class="r-source intl">해외<br>팬미디어</span>
+        <div>
+          <div class="r-text">K팝 크로스보더 파워 성장 시점에 <strong>한·중·일이 경쟁사임에도 협력</strong>한 것은 "K팝 글로벌 확장의 새 국면" 신호</div>
+          <div class="r-outlet"><a href="https://respawn.outlookindia.com/pop-culture/pop-culture-news/global-k-chart-melon-tencent-line-music" target="_blank">Outlook Respawn (India)</a> · 2026.05.30</div>
+        </div>
+        <span class="r-tag pos">업계 협력 호평</span>
+      </div>
+
+      <div class="reaction-item">
+        <span class="r-source intl">해외<br>미디어</span>
+        <div>
+          <div class="r-text"><strong>서구 시장(미국·유럽·동남아·중남미) 완전 배제</strong>. "The Global K-POP Standard" 슬로건이 과도하다는 지적. Spotify·Apple Music 데이터 없음</div>
+          <div class="r-outlet"><a href="https://www.ajupress.com/view/20260528095670802" target="_blank">AJU Press</a> 등 해외 반응 종합</div>
+        </div>
+        <span class="r-tag neg">범위 한계</span>
+      </div>
+
+      <div class="reaction-item">
+        <span class="r-source intl">해외<br>미디어</span>
+        <div>
+          <div class="r-text">TME만 주간·월간 차트 미운영(일간만). <strong>플랫폼별 제공 데이터 비대칭</strong>이 통합 차트 신뢰도에 영향</div>
+          <div class="r-outlet"><a href="https://www.theouterhaven.net/kakao-entertainments-melon-officially-launches-global-k-chart/" target="_blank">The Outerhaven</a> · 2026.06.01</div>
+        </div>
+        <span class="r-tag neg">데이터 비대칭</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FAN COMMUNITY BOARD -->
+  <div class="section-label">02-B · 팬 커뮤니티 반응 보드</div>
+  <!-- TAB SWITCHER -->
+  <div style="display:flex;gap:0;margin-bottom:0;border-bottom:1px solid var(--border);">
+    <button onclick="switchCommTab('domestic')" id="tabDomestic" class="comm-tab active-tab">🇰🇷 국내 커뮤니티</button>
+    <button onclick="switchCommTab('global')" id="tabGlobal" class="comm-tab">🌐 해외 K팝 커뮤니티</button>
+  </div>
+
+  <!-- DOMESTIC PANEL -->
+  <div id="panelDomestic" class="comm-panel card" style="border-top:none;border-radius:0 0 6px 6px;margin-bottom:32px;">
+
+    <!-- 검색 바로가기 버튼 -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <a href="https://www.theqoo.net/index.php?mid=square&search_target=title_content&search_keyword=%EA%B8%80%EB%A1%9C%EB%B2%8C+K%EC%B0%A8%ED%8A%B8" target="_blank" class="comm-goto">🔍 더쿠 검색</a>
+      <a href="https://search.naver.com/search.naver?where=news&query=%EA%B8%80%EB%A1%9C%EB%B2%8C+K%EC%B0%A8%ED%8A%B8&sm=tab_opt&sort=1" target="_blank" class="comm-goto" style="color:var(--accent4);border-color:rgba(16,185,129,0.3);">🔍 네이버 최신</a>
+      <a href="https://twitter.com/search?q=%EA%B8%80%EB%A1%9C%EB%B2%8C+K%EC%B0%A8%ED%8A%B8&f=live" target="_blank" class="comm-goto" style="color:#a78bfa;border-color:rgba(124,58,237,0.3);">🔍 X 실시간</a>
+      <a href="https://v.daum.net/v/20260528182502166" target="_blank" class="comm-goto" style="color:var(--accent2);border-color:rgba(255,107,53,0.3);">💬 다음뉴스 댓글</a>
+      <span style="font-size:10px;color:var(--text-dim);align-self:center;font-family:'Space Mono',monospace;">더쿠 원글 = 로그인 필요 → 검색 버튼으로 직접 확인</span>
+    </div>
+
+    <!-- 필터 -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+      <button onclick="filterComm('all')" class="cfbtn active" data-filter="all">전체 <span class="cfcount">7</span></button>
+      <button onclick="filterComm('neg')" class="cfbtn" data-filter="neg">🔴 비판·우려 <span class="cfcount">4</span></button>
+      <button onclick="filterComm('pos')" class="cfbtn" data-filter="pos">🟢 긍정·기대 <span class="cfcount">2</span></button>
+      <button onclick="filterComm('neu')" class="cfbtn" data-filter="neu">🟡 관망 <span class="cfcount">1</span></button>
+    </div>
+
+    <div id="commBoard">
+
+      <div class="comm-item" data-tone="neg">
+        <div class="comm-meta">
+          <span class="comm-src theqoo">더쿠</span><span class="comm-date">2026.06.01</span><span class="comm-tag neg">비판</span>
+        </div>
+        <div class="comm-body">좋아요랑 팬맺기를 차트에 넣는다고? 그거 계정 없어도 되는 거 아님? 그냥 중국 팬덤 차트 만든 거잖아. 멜론 차트도 좋아요 허점 때문에 난리났던 거 벌써 잊었나</div>
+      </div>
+
+      <div class="comm-item" data-tone="neg">
+        <div class="comm-meta">
+          <span class="comm-src theqoo">더쿠</span><span class="comm-date">2026.06.01</span><span class="comm-tag neg">비판</span>
+        </div>
+        <div class="comm-body">에스파가 일간/주간/월간 싹 다 1위면 그게 정상적인 차트임? 중국 팬 스트리밍+팬활동 다 합산하면 에스파는 영원히 1위 아닌가. 차트 자체가 의미없어지는 구조</div>
+      </div>
+
+      <div class="comm-item" data-tone="neg">
+        <div class="comm-meta">
+          <span class="comm-src naver">네이버댓글</span><span class="comm-date">2026.06.01</span><span class="comm-tag neg">비판</span>
+        </div>
+        <div class="comm-body">가중치를 얼마나 어떻게 반영하는지 공개를 안 하잖아요. 빌보드는 그래도 산식이 대충이라도 알려져 있는데, 이건 진짜 블랙박스 차트. 공신력이 생기려면 최소한 스트리밍 몇% 팬활동 몇%는 밝혀야죠</div>
+      </div>
+
+      <div class="comm-item" data-tone="neg">
+        <div class="comm-meta">
+          <span class="comm-src daum">다음댓글</span><span class="comm-date">2026.05.28</span><span class="comm-tag neg">비판</span>
+        </div>
+        <div class="comm-body">"글로벌"이라고 하는데 미국이랑 유럽 팬들 데이터는 없는 거잖음. 스포티파이 없고, 애플뮤직 없는 게 글로벌임? 한중일 아시아 차트라고 솔직하게 이름 붙이지</div>
+      </div>
+
+      <div class="comm-item" data-tone="pos">
+        <div class="comm-meta">
+          <span class="comm-src naver">네이버댓글</span><span class="comm-date">2026.06.01</span><span class="comm-tag pos">긍정</span>
+        </div>
+        <div class="comm-body">한중일 합산이라도 이게 어딘가. 빌보드 글로벌 200도 처음엔 욕 많이 먹었는데 지금은 다들 쓰잖아. 일단 만들어 놓고 개선해 나가는 게 맞는 방향인 것 같음</div>
+      </div>
+
+      <div class="comm-item" data-tone="pos">
+        <div class="comm-meta">
+          <span class="comm-src daum">다음댓글</span><span class="comm-date">2026.05.26</span><span class="comm-tag pos">기대</span>
+        </div>
+        <div class="comm-body">일본 1억 유저 LINE 생태계랑 TME 중국 파워를 묶은 거잖아. 이게 잘 되면 K팝 해외 팬들이 한국 플랫폼과 연결되는 채널이 생기는 셈. 멜론 입장에선 해외 유저 유입 효과도 있고 나쁜 선택은 아님</div>
+      </div>
+
+      <div class="comm-item" data-tone="neu">
+        <div class="comm-meta">
+          <span class="comm-src naver">네이버댓글</span><span class="comm-date">2026.05.28</span><span class="comm-tag neu">관망</span>
+        </div>
+        <div class="comm-body">일단 출시하고 봐야 알 것 같은데. 조작 방어 시스템이 어느 정도인지가 관건임. 써클차트도 처음엔 말 많았는데 지금은 공신력 있잖아. 두고 봐야지</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GLOBAL PANEL -->
+  <div id="panelGlobal" class="comm-panel card" style="display:none;border-top:none;border-radius:0 0 6px 6px;margin-bottom:32px;">
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <a href="https://www.reddit.com/r/kpop/search/?q=Global+K+Chart+melon&sort=new" target="_blank" class="comm-goto">🔍 Reddit r/kpop 검색</a>
+      <a href="https://twitter.com/search?q=%23GlobalKChart&f=live" target="_blank" class="comm-goto" style="color:#a78bfa;border-color:rgba(124,58,237,0.3);">🔍 X #GlobalKChart</a>
+      <a href="https://www.musicbusinessworldwide.com/kakaos-melon-tencent-music-and-line-music-to-launch-unified-k-pop-chart-in-june-that-pools-streaming-data-from-south-korea-china-and-japan/" target="_blank" class="comm-goto" style="color:var(--accent4);border-color:rgba(16,185,129,0.3);">📰 MBW 기사 원문</a>
+      <a href="https://musically.com/2026/05/28/k-pops-new-global-k-chart-to-include-fan-activity-data/" target="_blank" class="comm-goto" style="color:var(--accent2);border-color:rgba(255,107,53,0.3);">📰 Music Ally 원문</a>
+    </div>
+
+    <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+      <button onclick="filterGlobal('all')" class="cfbtn active" data-gf="all">전체 <span class="cfcount">8</span></button>
+      <button onclick="filterGlobal('neg')" class="cfbtn" data-gf="neg">🔴 비판·우려 <span class="cfcount">4</span></button>
+      <button onclick="filterGlobal('pos')" class="cfbtn" data-gf="pos">🟢 긍정·기대 <span class="cfcount">3</span></button>
+      <button onclick="filterGlobal('neu')" class="cfbtn" data-gf="neu">🟡 관망 <span class="cfcount">1</span></button>
+    </div>
+
+    <div id="globalBoard">
+
+      <!-- MBW -->
+      <div class="comm-item" data-gtone="neg">
+        <div class="comm-meta">
+          <span class="comm-src industry" style="background:rgba(16,185,129,0.12);color:var(--accent4);border:1px solid rgba(16,185,129,0.3);">MBW</span>
+          <span class="comm-date">2026.05.26 · 업계지</span>
+          <span class="comm-tag neg">비판</span>
+        </div>
+        <div class="comm-body">
+          <div class="bilingual-orig">"Interesting move, but calling it a 'Global' chart when it excludes the US, Europe, Southeast Asia, and Latin America seems like a stretch. Spotify's Global 200 and Billboard cover real global reach — this is an East Asian regional chart at best."</div>
+          <div class="bilingual-kr">💬 "흥미로운 시도이지만, 미국·유럽·동남아·중남미를 제외하고 '글로벌' 차트라 부르는 건 과장. 스포티파이 글로벌 200이나 빌보드는 진짜 글로벌 커버리지를 가진다 — 이건 기껏해야 동아시아 지역 차트."</div>
+        </div>
+      </div>
+
+      <!-- Music Ally -->
+      <div class="comm-item" data-gtone="pos">
+        <div class="comm-meta">
+          <span class="comm-src industry" style="background:rgba(16,185,129,0.12);color:var(--accent4);border:1px solid rgba(16,185,129,0.3);">Music Ally</span>
+          <span class="comm-date">2026.05.28 · 업계지</span>
+          <span class="comm-tag pos">차별화 인정</span>
+        </div>
+        <div class="comm-body">
+          <div class="bilingual-orig">"The fan activity index is genuinely novel — no other major chart includes fandom engagement signals like likes and follows. Whether this makes it more accurate or more gameable is the key question."</div>
+          <div class="bilingual-kr">💬 "팬 활동 지수는 진짜 새로운 시도 — 좋아요·팔로우 같은 팬덤 참여 신호를 포함한 메이저 차트는 전례 없음. 이게 더 정확한 차트를 만드는 건지, 아니면 더 조작하기 쉬운 차트가 되는 건지가 핵심 질문."</div>
+        </div>
+      </div>
+
+      <!-- Digital Music News -->
+      <div class="comm-item" data-gtone="neu">
+        <div class="comm-meta">
+          <span class="comm-src industry" style="background:rgba(16,185,129,0.12);color:var(--accent4);border:1px solid rgba(16,185,129,0.3);">DMN</span>
+          <span class="comm-date">2026.05.28 · 업계지</span>
+          <span class="comm-tag neu">관망</span>
+        </div>
+        <div class="comm-body">
+          <div class="bilingual-orig">"Whether the Global-K Chart will carry enough authority to matter outside the three participating markets remains to be seen. The chart's methodology — weighting fan activity alongside streams — introduces new complexity around manipulation and verification."</div>
+          <div class="bilingual-kr">💬 "글로벌 K 차트가 3개 참여 시장 밖에서 충분한 권위를 가질지는 두고 봐야 한다. 팬 활동을 스트리밍과 함께 가중치로 반영하는 집계 방식은 조작 가능성과 검증 문제에서 새로운 복잡성을 불러온다."</div>
+        </div>
+      </div>
+
+      <!-- Outlook Respawn 인도 -->
+      <div class="comm-item" data-gtone="pos">
+        <div class="comm-meta">
+          <span class="comm-src intl">인도 팬미디어</span>
+          <span class="comm-date">2026.05.30 · Outlook Respawn</span>
+          <span class="comm-tag pos">기대</span>
+        </div>
+        <div class="comm-body">
+          <div class="bilingual-orig">"The alliance indicates a new phase of K-pop's global expansion, where competing companies are collaborating to strengthen its international hold. The three biggest Asian platforms uniting is a big deal."</div>
+          <div class="bilingual-kr">💬 "이번 연합은 K팝 글로벌 확장의 새 국면을 보여준다 — 경쟁사들이 협력해 국제적 영향력을 강화하는 것. 아시아 최대 3개 플랫폼이 뭉친 것은 상당히 큰 사건."</div>
+        </div>
+      </div>
+
+      <!-- X 서구팬 비판 1 -->
+      <div class="comm-item" data-gtone="neg">
+        <div class="comm-meta">
+          <span class="comm-src twitter">X · 서구 팬</span>
+          <span class="comm-date">2026.06.01</span>
+          <span class="comm-tag neg">비판</span>
+        </div>
+        <div class="comm-body">
+          <div class="bilingual-orig">"Interesting concept but let's be real — it's a Han-Jap-China chart, not a 'global' one. Stray Kids and ATEEZ fans in the West don't count here? 👀 #GlobalKChart #kpop"</div>
+          <div class="bilingual-kr">💬 "흥미로운 개념이지만 솔직히 말하면 이건 한·중·일 차트지 '글로벌'이 아님. 서구의 스트레이키즈·에이티즈 팬들 데이터는 여기서 안 쓰이는 거임? 👀"</div>
+        </div>
+      </div>
+
+      <!-- X 서구팬 비판 2 -->
+      <div class="comm-item" data-gtone="neg">
+        <div class="comm-meta">
+          <span class="comm-src twitter">X · 서구 팬</span>
+          <span class="comm-date">2026.06.01</span>
+          <span class="comm-tag neg">비판</span>
+        </div>
+        <div class="comm-body">
+          <div class="bilingual-orig">"So Melon made a chart with TME and Line Music and called it 'The Global K-POP Standard'?? 😭 Without Spotify, Apple Music, YouTube data it's literally just an Asian chart with a branding problem. Love the concept tho, just be honest about what it covers"</div>
+          <div class="bilingual-kr">💬 "멜론이 TME·라인뮤직이랑 차트 만들면서 '더 글로벌 K팝 스탠더드'라 불렀다고? 😭 스포티파이·애플뮤직·유튜브 데이터 없으면 그냥 브랜딩 문제 있는 아시아 차트임. 개념 자체는 좋은데, 커버하는 범위에 대해 솔직해지길"</div>
+        </div>
+      </div>
+
+      <!-- X 글로벌 팬 긍정 -->
+      <div class="comm-item" data-gtone="pos">
+        <div class="comm-meta">
+          <span class="comm-src twitter">X · 글로벌 팬</span>
+          <span class="comm-date">2026.06.01</span>
+          <span class="comm-tag pos">기대</span>
+        </div>
+        <div class="comm-body">
+          <div class="bilingual-orig">"FINALLY a kpop chart that includes fandom activity!! Billboard and Spotify only count streams but this also includes fan engagement. As a k-pop fan this actually makes way more sense for our community 🙌 #GlobalKChart aespa swept all categories day 1!!"</div>
+          <div class="bilingual-kr">💬 "드디어 팬덤 활동을 포함한 K팝 차트!! 빌보드·스포티파이는 스트리밍만 집계하는데, 이건 팬 참여도까지 포함. K팝 팬으로서 이게 우리 커뮤니티에 훨씬 더 의미있는 것 같음 🙌 에스파 첫날 전부 1위!!"</div>
+        </div>
+      </div>
+
+      <!-- Reddit -->
+      <div class="comm-item" data-gtone="neg">
+        <div class="comm-meta">
+          <span class="comm-src" style="background:rgba(255,69,0,0.12);color:#ff6314;border:1px solid rgba(255,69,0,0.3);font-family:'Space Mono',monospace;font-size:9px;padding:3px 5px;border-radius:3px;font-weight:700;">Reddit</span>
+          <span class="comm-date">2026.06.01~ · r/kpop</span>
+          <span class="comm-tag neg">비판 다수</span>
+        </div>
+        <div class="comm-body">
+          <div class="bilingual-orig">"why is this called global when it's literally just 3 Asian countries" / "no Spotify, no YouTube = not a real global metric" / "interesting but the name oversells it"</div>
+          <div class="bilingual-kr">💬 "3개 아시아 국가밖에 없는데 왜 글로벌이라고 부름" / "스포티파이·유튜브 없으면 진짜 글로벌 지표가 아님" / "흥미롭긴 한데 이름이 과대포장" — r/kpop 소규모 스레드 반응 종합. 전용 메이저 스레드는 아직 미개설.</div>
+        </div>
+      </div>
+
+    
+
+    <!-- X 실시간 위젯 -->
+    <div style="margin-top:24px;padding-top:18px;border-top:1px solid var(--border);">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+        <div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;color:#a78bfa;letter-spacing:2px;margin-bottom:4px;">𝕏 REALTIME · 실시간 트윗</div>
+          <div style="font-size:11px;color:var(--text-dim);">X 공식 타임라인 위젯 — 새 트윗은 자동으로 반영됨</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="showXFeed('global')" id="xbtnGlobal" class="cfbtn active" style="font-size:10px;">#GlobalKChart</button>
+          <button onclick="showXFeed('kr')" id="xbtnKr" class="cfbtn" style="font-size:10px;">글로벌K차트</button>
+          <button onclick="showXFeed('melon')" id="xbtnMelon" class="cfbtn" style="font-size:10px;">Melon chart kpop</button>
+        </div>
+      </div>
+
+      <!-- 위젯 컨테이너 -->
+      <div id="xWidgetWrap" style="border-radius:6px;overflow:hidden;background:#0e1520;border:1px solid var(--border);min-height:500px;position:relative;">
+
+        <!-- 로딩 상태 -->
+        <div id="xLoading" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text-dim);">
+          <div style="font-size:28px;">𝕏</div>
+          <div style="font-family:'Space Mono',monospace;font-size:11px;">타임라인 로딩 중...</div>
+          <div style="font-size:10px;color:var(--text-dim);opacity:0.6;">X 서버 응답에 2~5초 소요될 수 있음</div>
+        </div>
+        <!-- 실제 위젯이 여기 삽입됨 -->
+        <div id="xWidgetInner" style="min-height:480px;"></div>
+      </div>
+
+      <!-- X 차단 환경 안내 -->
+      <div id="xBlockedMsg" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);border-radius:4px;font-size:11px;color:#94a3b8;">
+        ⚠️ X 위젯이 차단된 환경(사내 방화벽 등)에서는 위젯이 표시되지 않을 수 있습니다.
+        <a href="https://twitter.com/search?q=%23GlobalKChart&f=live" target="_blank" style="color:var(--accent);margin-left:8px;">X에서 직접 보기 →</a>
+      </div>
+    </div>
+
+    <!-- 글로벌 서비스 관점 요약 -->
+    <div style="margin-top:18px;padding:14px 16px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:4px;">
+      <div style="font-size:11px;font-family:'Space Mono',monospace;color:#a78bfa;margin-bottom:8px;letter-spacing:1px;">🌐 글로벌 서비스 관점 종합</div>
+      <div style="font-size:12px;color:#94a3b8;line-height:1.8;">
+        서구 팬덤의 핵심 불만은 하나 — <strong style="color:var(--text);">"Global이라는 이름인데 내 데이터가 없다"</strong>는 것.
+        Stray Kids·ATEEZ·TXT 등 서구 파워가 강한 그룹의 팬들은 "이 차트는 우리랑 상관없다"는 인식을 가지기 쉬움.
+        반면 인도·동남아 팬들은 비교적 우호적 — <strong style="color:var(--text);">아시아 중심 K팝 팬층에서는 수용성이 높음</strong>.
+        서비스 글로벌 확장 시 <strong style="color:#a78bfa;">동남아(Spotify 데이터)부터 파트너 확장</strong>이 서구 팬 비판을 줄이는 가장 빠른 경로.
+      </div>
+    </div>
+  </div>
+
+
+  </div>
+
+  <!-- PLATFORM DEEP DIVE -->
+  <div class="section-label">03 · 플랫폼별 기여 구조 & 반응</div>
+  <div class="grid-21" style="margin-bottom: 32px;">
+    <div class="card">
+      <div class="card-title">각 플랫폼 포지셔닝 & 반응</div>
+      <div class="plat-row">
+        <div>
+          <div class="plat-name" style="color:var(--accent);">🍈 Melon</div>
+          <div class="plat-sub">한국 · 오케스트레이터</div>
+        </div>
+        <div>
+          <div class="plat-bar-wrap"><div class="plat-bar" style="width:85%; background:var(--accent);"></div></div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">스트리밍+다운로드+팬맺기+좋아요 / 일·주·월간 전부 운영</div>
+        </div>
+        <div class="plat-val" style="color:var(--accent);">리더</div>
+      </div>
+      <div class="plat-row">
+        <div>
+          <div class="plat-name" style="color:#ff7043;">🎵 TME</div>
+          <div class="plat-sub">중국 · QQ뮤직 등 4개</div>
+        </div>
+        <div>
+          <div class="plat-bar-wrap"><div class="plat-bar" style="width:72%; background:#ff7043;"></div></div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">자체 팬덤 활동지수 / 현재 일간 차트만 운영 (주·월간 미정)</div>
+        </div>
+        <div class="plat-val" style="color:#ff7043;">파트너</div>
+      </div>
+      <div class="plat-row">
+        <div>
+          <div class="plat-name" style="color:#4caf50;">📱 LINE</div>
+          <div class="plat-sub">일본 · 1억 유저 생태계</div>
+        </div>
+        <div>
+          <div class="plat-bar-wrap"><div class="plat-bar" style="width:60%; background:#4caf50;"></div></div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:4px;">LINE 앱 생태계 연동 / 일·주·월간 운영</div>
+        </div>
+        <div class="plat-val" style="color:#4caf50;">파트너</div>
+      </div>
+
+      <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;letter-spacing:1px;">📌 집계 구조 이슈</div>
+        <div style="font-size:12px;color:#94a3b8;line-height:1.8;">
+          • TME의 일간 전용 운영 = 주·월간 통합 차트 데이터 불완전<br>
+          • 플랫폼별 팬 활동지수 정의 상이 → 합산 시 이질성<br>
+          • 가중치 공개 수준 낮아 외부 검증 불가
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">집계 항목 비교</div>
+      <div class="chart-wrap-sm">
+        <canvas id="platformChart"></canvas>
+      </div>
+      <div style="margin-top:14px; font-size:11px; color:#64748b; line-height:1.7;">
+        ⚠️ TME의 팬 활동지수 가중치가 불균형하게 높을 경우 중국 팬덤 파워 아티스트의 순위 왜곡 가능성
+      </div>
+    </div>
+  </div>
+
+  <!-- KEY INSIGHTS -->
+  <div class="section-label">04 · 핵심 인사이트</div>
+
+  <div class="grid-2" style="margin-bottom:8px;">
+    <div>
+      <div class="insight-card red">
+        <div class="insight-num">INSIGHT 01</div>
+        <div class="insight-title">🔴 팬 활동지수 = 최대 리스크 포인트</div>
+        <div class="insight-body">
+          스트리밍과 달리 좋아요·팬맺기는 <strong>계정 없이도 조작 용이</strong>. 이미 2025년 세븐틴 The8 사례로 국내 커뮤니티에서 중국 팬덤의 조직적 좋아요 조작 논란이 터진 전례 있음. Global-K Chart가 이를 공식 집계에 편입하면서 <strong>"가장 팬덤이 강한 차트"가 아니라 "가장 조작이 쉬운 차트"</strong>라는 인식 리스크가 높음.
+        </div>
+        <div class="insight-tags">
+          <span class="itag r">신뢰도 위기</span>
+          <span class="itag r">조작 리스크</span>
+          <span class="itag w">우선 해결 필요</span>
+        </div>
+      </div>
+
+      <div class="insight-card orange">
+        <div class="insight-num">INSIGHT 02</div>
+        <div class="insight-title">🟠 "Global" 브랜딩과 실제 커버리지 갭</div>
+        <div class="insight-body">
+          "The Global K-POP Standard" 슬로건을 내걸었지만 실제로는 <strong>한·중·일 3국만 커버</strong>. K팝의 급성장 시장인 미국·동남아·유럽·중남미가 완전히 배제됨. 빌보드 Global 200, Spotify Charts와 비교될 때 정통성 약점으로 지적될 것. <strong>서구 산업지가 "limited scope" 꼬리표를 붙이는 건 시간문제</strong>.
+        </div>
+        <div class="insight-tags">
+          <span class="itag o">브랜딩 갭</span>
+          <span class="itag o">커버리지 한계</span>
+          <span class="itag c">확장 로드맵 필요</span>
+        </div>
+      </div>
+
+      <div class="insight-card warn">
+        <div class="insight-num">INSIGHT 03</div>
+        <div class="insight-title">🟡 TME 데이터 구조의 비대칭성</div>
+        <div class="insight-body">
+          TME는 현재 <strong>일간 차트만 운영</strong>하고 있어 주간·월간 통합 차트에서의 중국 시장 반영이 불완전. 또한 QQ뮤직·쿠구·쿠워·JOOX 등 4개 플랫폼 데이터를 어떻게 합산하는지도 불투명. <strong>중국 데이터 쏠림 혹은 누락 양방향 왜곡 가능성</strong> 상존.
+        </div>
+        <div class="insight-tags">
+          <span class="itag w">데이터 비대칭</span>
+          <span class="itag w">운영 미완성</span>
+          <span class="itag p">파트너 협의 필요</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="insight-card cyan">
+        <div class="insight-num">INSIGHT 04</div>
+        <div class="insight-title">🔵 팬덤 인텐시티 측정 = 진짜 차별화 가능성</div>
+        <div class="insight-body">
+          단순 스트리밍 집계는 빌보드·스포티파이가 이미 함. 하지만 <strong>팬덤 활동 강도를 공식 차트 지표로 만든 것은 전세계 유일</strong>. 이걸 조작 방지와 투명성 문제를 해결하면서 고도화하면 진짜 K팝 전용 표준 차트로 자리잡을 수 있음. BTS·블랙핑크 해외 팬덤이 "내가 기여한 숫자가 차트에 반영된다"는 경험을 제공하면 플랫폼 유입 효과도 큼.
+        </div>
+        <div class="insight-tags">
+          <span class="itag c">핵심 차별화</span>
+          <span class="itag g">팬덤 참여 증대</span>
+          <span class="itag c">방어적 해자</span>
+        </div>
+      </div>
+
+      <div class="insight-card green">
+        <div class="insight-num">INSIGHT 05</div>
+        <div class="insight-title">🟢 MOU 결과물에서 살아있는 인프라로</div>
+        <div class="insight-body">
+          현재 차트는 3사 MOU의 "출시 이벤트"에 가까움. 하지만 3사가 공유하는 <strong>실시간 K팝 데이터 파이프라인 자체가 자산</strong>. 이걸 토대로 아티스트 분석 리포트, 레이블 B2B 솔루션, 팬덤 마케팅 인텔리전스 등으로 확장하면 단순 차트를 넘어 <strong>K팝 데이터 인프라 사업자</strong>로 포지셔닝 가능.
+        </div>
+        <div class="insight-tags">
+          <span class="itag g">B2B 확장</span>
+          <span class="itag g">데이터 사업화</span>
+          <span class="itag p">인프라 레이어</span>
+        </div>
+      </div>
+
+      <div class="insight-card purple">
+        <div class="insight-num">INSIGHT 06</div>
+        <div class="insight-title">🟣 에스파 3관왕 = 차트의 SM 편향 리스크</div>
+        <div class="insight-body">
+          출시 당일 에스파가 일·주·월간 1위를 모두 가져감. 에스파는 <strong>중국 팬덤이 압도적으로 강한 아티스트</strong>. TME 데이터 가중치와 팬 활동지수가 맞물려 특정 팬덤이 강한 SM 소속 아티스트에게 유리한 구조일 수 있음. 차트의 대표성 논란으로 이어질 수 있고, 타 에이전시의 참여 의지에도 영향.
+        </div>
+        <div class="insight-tags">
+          <span class="itag p">편향 리스크</span>
+          <span class="itag r">대표성 논란</span>
+          <span class="itag w">가중치 조정 필요</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- DEVELOP DIRECTIONS -->
+  <div class="section-label">05 · 디벨롭 방향 제언</div>
+  <div class="grid-3" style="margin-bottom: 16px;">
+    <div class="dir-card d1">
+      <div class="dir-num">01</div>
+      <div class="dir-icon">🛡️</div>
+      <div class="dir-title">팬 활동지수 신뢰도 강화</div>
+      <div class="dir-body">
+        계정 인증 기반의 활동지수 적용, 비정상 패턴 탐지 알고리즘 고도화. 플랫폼별 가중치·산식을 단계적으로 공개해 "검증 가능한 차트" 이미지 구축. 빌보드가 사기 스트리밍 탐지 시스템을 도입한 것처럼 fraud detection을 차트 핵심 인프라로.
+      </div>
+      <span class="dir-priority high">🔴 최우선 · 즉시</span>
+    </div>
+
+    <div class="dir-card d2">
+      <div class="dir-num">02</div>
+      <div class="dir-icon">🌏</div>
+      <div class="dir-title">커버리지 확장 로드맵 수립</div>
+      <div class="dir-body">
+        동남아(Spotify TH/ID/MY), 미국(Spotify, Apple Music), 유럽 순으로 파트너 확장 플랜 공개. "The Asian K-Chart"로 포지션을 솔직하게 잡되, 확장 로드맵을 공개해 "진짜 글로벌"로 가는 여정으로 서사를 만들 것. 유사 사례: 빌보드가 글로벌 200으로 확장한 과정.
+      </div>
+      <span class="dir-priority high">🔴 최우선 · 6~12개월</span>
+    </div>
+
+    <div class="dir-card d3">
+      <div class="dir-num">03</div>
+      <div class="dir-icon">📊</div>
+      <div class="dir-title">TME 데이터 완전성 확보</div>
+      <div class="dir-body">
+        TME의 주간·월간 차트 참여를 조속히 확보. QQ뮤직 외 3개 플랫폼(쿠구·쿠워·JOOX) 데이터 합산 방식 명문화. 중국 데이터 누락 구간이 발생할 경우 대체 처리 기준도 운영 정책으로 공개.
+      </div>
+      <span class="dir-priority high">🔴 최우선 · 파트너 협의</span>
+    </div>
+
+    <div class="dir-card d4">
+      <div class="dir-num">04</div>
+      <div class="dir-icon">📡</div>
+      <div class="dir-title">차트 API & 미디어 파트너십</div>
+      <div class="dir-body">
+        빌보드처럼 차트 데이터를 B2B API로 공개하거나, MAMA·멜론 뮤직어워드·골든디스크 등 시상식과 공식 연계. 방송(MNET 등) 차트 고정 코너로 편입하면 인지도와 공신력이 비약적으로 오름. K팝 전문 미디어(Koreaboo, Allkpop)에 데이터 피드 제공.
+      </div>
+      <span class="dir-priority mid">🟡 중기 · 3~6개월</span>
+    </div>
+
+    <div class="dir-card d5">
+      <div class="dir-num">05</div>
+      <div class="dir-icon">💼</div>
+      <div class="dir-title">B2B 데이터 인텔리전스 사업화</div>
+      <div class="dir-body">
+        레이블·에이전시 대상으로 "아티스트 글로벌 팬덤 히트맵", "국가별 팬 활동 트렌드 리포트", "컴백 타이밍 최적화 인사이트" 등 리포트 상품화. 3사 통합 데이터는 세계 어디에도 없는 자산. 광고·MD·투어 기획에 활용 가능한 Audience Intelligence 레이어로 확장.
+      </div>
+      <span class="dir-priority mid">🟡 중기 · 신사업</span>
+    </div>
+
+    <div class="dir-card" style="background:var(--surface2);">
+      <div class="dir-num">06</div>
+      <div class="dir-icon">🎯</div>
+      <div class="dir-title">팬 참여형 UX & 게임화</div>
+      <div class="dir-body">
+        "내 스트리밍이 차트에 이만큼 기여했다"는 기여 가시화 UX. 팬덤 챌린지, 차트 인 아티스트 알림, 국가별 팬파워 랭킹 등 팬이 차트를 '게임처럼' 즐기는 경험 설계. X(트위터) 기반의 차트 인증 공유 기능으로 바이럴 회로 구성.
+      </div>
+      <span class="dir-priority low">🟢 장기 · 성장 동력</span>
+    </div>
+  </div>
+
+  <!-- COMPETITIVE POSITION -->
+  <div class="section-label">06 · 경쟁 차트 대비 포지션 맵</div>
+  <div class="card" style="margin-bottom:32px;">
+    <div class="card-title">글로벌 K팝 관련 차트 비교</div>
+    <div class="chart-wrap">
+      <canvas id="positionChart"></canvas>
+    </div>
+  </div>
+
+  <table class="cov-table" style="margin-bottom:32px;">
+    <thead>
+      <tr>
+        <th>차트</th>
+        <th>운영사</th>
+        <th>커버리지</th>
+        <th>팬덤 지수</th>
+        <th>아티스트 차트</th>
+        <th>투명성</th>
+        <th>톤</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Global-K Chart</strong></td>
+        <td><span class="media-badge kr">Melon/카카오</span></td>
+        <td>한·중·일 3국</td>
+        <td>✅ 포함</td>
+        <td>✅ 아티스트 중심</td>
+        <td>⚠️ 부분 공개</td>
+        <td><span class="tone-dot tone-p"></span>기대반 우려반</td>
+      </tr>
+      <tr>
+        <td>Billboard Artist 100</td>
+        <td><span class="media-badge gl">Billboard</span></td>
+        <td>미국 중심</td>
+        <td>❌ 미포함</td>
+        <td>✅ 아티스트</td>
+        <td>✅ 상세 공개</td>
+        <td><span class="tone-dot tone-p"></span>업계 표준</td>
+      </tr>
+      <tr>
+        <td>Billboard Global 200</td>
+        <td><span class="media-badge gl">Billboard</span></td>
+        <td>전세계</td>
+        <td>❌ 미포함</td>
+        <td>❌ 곡 중심</td>
+        <td>✅ 상세 공개</td>
+        <td><span class="tone-dot tone-p"></span>K팝 기준점</td>
+      </tr>
+      <tr>
+        <td>Spotify Global Chart</td>
+        <td><span class="media-badge gl">Spotify</span></td>
+        <td>전세계</td>
+        <td>❌ 미포함</td>
+        <td>❌ 곡 중심</td>
+        <td>✅ 스트림수 공개</td>
+        <td><span class="tone-dot tone-m"></span>K팝 영향력 反映</td>
+      </tr>
+      <tr>
+        <td>Melon 아티스트 차트</td>
+        <td><span class="media-badge kr">Melon</span></td>
+        <td>한국만</td>
+        <td>✅ 포함</td>
+        <td>✅ 아티스트</td>
+        <td>⚠️ 부분 공개</td>
+        <td><span class="tone-dot tone-n"></span>국내 기준</td>
+      </tr>
+      <tr>
+        <td>가온(써클) 차트</td>
+        <td><span class="media-badge ind">써클차트</span></td>
+        <td>한국</td>
+        <td>❌ 미포함</td>
+        <td>❌ 곡 중심</td>
+        <td>✅ 상세 공개</td>
+        <td><span class="tone-dot tone-p"></span>국내 공신력</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+
+  <!-- 07 · 감성 분석 (자동 업데이트) -->
+  <div class="section-label">07 · 감성 분석 <span style="font-size:9px;color:var(--accent4);margin-left:8px;">⚡ 매일 자동 업데이트</span></div>
+
+  <!-- 업데이트 상태 배너 -->
+  <div id="updateBanner" style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:12px 18px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="updateDot" style="width:8px;height:8px;border-radius:50%;background:var(--text-dim);display:inline-block;"></span>
+      <span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text-muted);">마지막 업데이트: <span id="lastUpdated">로딩 중...</span></span>
+    </div>
+    <span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-dim);">GitHub Actions · 매일 09:00 KST 자동 실행</span>
+  </div>
+
+  <!-- AI 인사이트 요약 -->
+  <div id="aiInsightCard" class="card" style="margin-bottom:20px;border-color:rgba(0,212,255,0.2);">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <div style="font-size:24px;flex-shrink:0;">🤖</div>
+      <div>
+        <div style="font-size:11px;font-family:'Space Mono',monospace;color:var(--accent);letter-spacing:1px;margin-bottom:8px;">AI DAILY INSIGHT · Claude Sonnet</div>
+        <div id="aiInsightText" style="font-size:14px;line-height:1.8;color:#cbd5e1;"></div>
+        <div id="aiThemes" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-3" style="margin-bottom:20px;">
+    <!-- 감성 도넛 -->
+    <div class="card">
+      <div class="card-title">수집 기사 감성 분포</div>
+      <div style="position:relative;height:200px;">
+        <canvas id="sentimentDonut"></canvas>
+      </div>
+      <div id="sentimentLegend" style="display:flex;justify-content:center;gap:16px;margin-top:12px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;"></div>
+    </div>
+
+    <!-- 감성 KPI -->
+    <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card-title">수집 현황</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;flex:1;">
+        <div style="text-align:center;padding:14px;background:var(--surface2);border-radius:4px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent);line-height:1;" id="kpiTotal">—</div>
+          <div style="font-size:10px;color:var(--text-muted);">총 수집 기사</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:var(--surface2);border-radius:4px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent4);line-height:1;" id="kpiPos">—</div>
+          <div style="font-size:10px;color:var(--text-muted);">긍정 비율</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:var(--surface2);border-radius:4px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--warn);line-height:1;" id="kpiNeu">—</div>
+          <div style="font-size:10px;color:var(--text-muted);">중립 비율</div>
+        </div>
+        <div style="text-align:center;padding:14px;background:var(--surface2);border-radius:4px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--danger);line-height:1;" id="kpiNeg">—</div>
+          <div style="font-size:10px;color:var(--text-muted);">부정 비율</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 감성 트렌드 라인 -->
+    <div class="card">
+      <div class="card-title">일별 감성 트렌드 (최근 14일)</div>
+      <div style="position:relative;height:200px;">
+        <canvas id="sentimentTrend"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 08 · 키워드 분석 -->
+  <div class="section-label">08 · 키워드 분석 <span style="font-size:9px;color:var(--accent4);margin-left:8px;">⚡ 매일 자동 업데이트</span></div>
+
+  <div class="grid-2" style="margin-bottom:20px;">
+    <!-- 키워드 클라우드 -->
+    <div class="card">
+      <div class="card-title">주요 키워드 (감성별 색상)</div>
+      <div id="keywordCloud" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 0;min-height:140px;align-content:flex-start;"></div>
+      <div style="margin-top:12px;display:flex;gap:14px;font-size:10px;color:var(--text-muted);">
+        <span><span style="color:var(--accent4);">■</span> 긍정</span>
+        <span><span style="color:var(--warn);">■</span> 중립</span>
+        <span><span style="color:var(--danger);">■</span> 부정</span>
+        <span style="color:var(--text-dim);">· 크기 = 언급 빈도</span>
+      </div>
+    </div>
+
+    <!-- 키워드 바 차트 -->
+    <div class="card">
+      <div class="card-title">Top 10 키워드 빈도</div>
+      <div style="position:relative;height:220px;">
+        <canvas id="keywordBar"></canvas>
+      </div>
+    </div>
+  </div>
+
+
+</div><!-- /main -->
+<div class="footer">
+  <span>Global-K Chart Intelligence Report · Melon PM Dashboard · 2026.06.04</span>
+  <span>Sources: <a href="https://www.kmib.co.kr/article/view.asp?arcid=0029874999" target="_blank" style="color:var(--text-dim);text-decoration:none;border-bottom:1px dashed #334155;">국민일보</a> · <a href="https://www.fnnews.com/news/202605281157019419" target="_blank" style="color:var(--text-dim);text-decoration:none;border-bottom:1px dashed #334155;">파이낸셜뉴스</a> · <a href="https://www.newsis.com/view/NISX20260528_0003647000" target="_blank" style="color:var(--text-dim);text-decoration:none;border-bottom:1px dashed #334155;">뉴시스</a> · <a href="https://www.mt.co.kr/tech/2026/05/26/2026052608522392908" target="_blank" style="color:var(--text-dim);text-decoration:none;border-bottom:1px dashed #334155;">머니투데이</a> · <a href="https://www.dt.co.kr/article/12065343" target="_blank" style="color:var(--text-dim);text-decoration:none;border-bottom:1px dashed #334155;">디지털타임스</a> · <a href="https://musically.com/2026/05/28/k-pops-new-global-k-chart-to-include-fan-activity-data/" target="_blank" style="color:var(--text-dim);text-decoration:none;border-bottom:1px dashed #334155;">Music Ally</a> · <a href="https://www.digitalmusicnews.com/2026/05/28/global-k-chart-launch/" target="_blank" style="color:var(--text-dim);text-decoration:none;border-bottom:1px dashed #334155;">Digital Music News</a> · <a href="https://www.theouterhaven.net/kakao-entertainments-melon-officially-launches-global-k-chart/" target="_blank" style="color:var(--text-dim);text-decoration:none;border-bottom:1px dashed #334155;">The Outerhaven</a> · <a href="https://www.ajupress.com/view/20260528095670802" target="_blank" style="color:var(--text-dim);text-decoration:none;border-bottom:1px dashed #334155;">AJU Press</a></span>
+</div>
+
+<script>
+Chart.defaults.color = '#64748b';
+Chart.defaults.borderColor = '#1e2d42';
+Chart.defaults.font.family = "'Space Mono', monospace";
+Chart.defaults.font.size = 11;
+
+// Coverage Chart
+const ctx1 = document.getElementById('coverageChart').getContext('2d');
+new Chart(ctx1, {
+  type: 'doughnut',
+  data: {
+    labels: ['국내 언론 (호의적)', '국내 커뮤니티 (비판적)', '해외 산업지', '해외 팬 미디어', '중립/관망'],
+    datasets: [{
+      data: [32, 18, 22, 14, 14],
+      backgroundColor: [
+        'rgba(0, 212, 255, 0.7)',
+        'rgba(239, 68, 68, 0.7)',
+        'rgba(16, 185, 129, 0.7)',
+        'rgba(124, 58, 237, 0.7)',
+        'rgba(100, 116, 139, 0.5)'
+      ],
+      borderWidth: 0,
+      hoverOffset: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { padding: 12, font: { size: 10 }, color: '#94a3b8', boxWidth: 12 }
+      }
+    },
+    cutout: '65%'
+  }
+});
+
+// Platform Chart (radar)
+const ctx2 = document.getElementById('platformChart').getContext('2d');
+new Chart(ctx2, {
+  type: 'radar',
+  data: {
+    labels: ['스트리밍', '다운로드', '팬 활동지수', '주간 제공', '월간 제공'],
+    datasets: [
+      {
+        label: 'Melon',
+        data: [5, 5, 5, 5, 5],
+        fill: true,
+        backgroundColor: 'rgba(0,212,255,0.1)',
+        borderColor: 'rgba(0,212,255,0.8)',
+        pointBackgroundColor: '#00d4ff',
+        borderWidth: 1.5
+      },
+      {
+        label: 'TME',
+        data: [5, 3, 4, 1, 1],
+        fill: true,
+        backgroundColor: 'rgba(255,112,67,0.1)',
+        borderColor: 'rgba(255,112,67,0.7)',
+        pointBackgroundColor: '#ff7043',
+        borderWidth: 1.5
+      },
+      {
+        label: 'LINE MUSIC',
+        data: [5, 4, 4, 5, 5],
+        fill: true,
+        backgroundColor: 'rgba(76,175,80,0.1)',
+        borderColor: 'rgba(76,175,80,0.7)',
+        pointBackgroundColor: '#4caf50',
+        borderWidth: 1.5
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, color: '#94a3b8', boxWidth: 10, padding: 10 } } },
+    scales: {
+      r: {
+        min: 0, max: 5,
+        ticks: { display: false, stepSize: 1 },
+        grid: { color: '#1e2d42' },
+        pointLabels: { color: '#64748b', font: { size: 10 } }
+      }
+    }
+  }
+});
+
+// Position Map (bubble)
+const ctx3 = document.getElementById('positionChart').getContext('2d');
+new Chart(ctx3, {
+  type: 'bubble',
+  data: {
+    datasets: [
+      {
+        label: 'Global-K Chart',
+        data: [{ x: 4, y: 3, r: 22 }],
+        backgroundColor: 'rgba(0, 212, 255, 0.3)',
+        borderColor: '#00d4ff',
+        borderWidth: 2
+      },
+      {
+        label: 'Billboard Artist 100',
+        data: [{ x: 7, y: 5, r: 18 }],
+        backgroundColor: 'rgba(255,107,53,0.3)',
+        borderColor: '#ff6b35',
+        borderWidth: 1.5
+      },
+      {
+        label: 'Billboard Global 200',
+        data: [{ x: 9, y: 4, r: 20 }],
+        backgroundColor: 'rgba(255,107,53,0.2)',
+        borderColor: '#ff6b35',
+        borderWidth: 1.5
+      },
+      {
+        label: 'Spotify Global',
+        data: [{ x: 9.5, y: 3, r: 24 }],
+        backgroundColor: 'rgba(29,185,84,0.3)',
+        borderColor: '#1db954',
+        borderWidth: 1.5
+      },
+      {
+        label: 'Melon 아티스트 차트',
+        data: [{ x: 2, y: 4, r: 12 }],
+        backgroundColor: 'rgba(0,212,255,0.15)',
+        borderColor: 'rgba(0,212,255,0.5)',
+        borderWidth: 1.5
+      },
+      {
+        label: '가온(써클) 차트',
+        data: [{ x: 2, y: 6, r: 10 }],
+        backgroundColor: 'rgba(100,116,139,0.2)',
+        borderColor: '#64748b',
+        borderWidth: 1.5
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { font: { size: 10 }, color: '#94a3b8', boxWidth: 10, padding: 14 } },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const names = { 'Global-K Chart': '← 차트 공신력↑, 커버리지↑ 로 이동 목표', 'Spotify Global': '', 'Billboard Artist 100': '' };
+            return `${ctx.dataset.label}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        min: 0, max: 11,
+        title: { display: true, text: '← 지역 커버리지 협소    전세계 →', color: '#475569' },
+        ticks: { display: false },
+        grid: { color: '#0e1a2b' }
+      },
+      y: {
+        min: 0, max: 9,
+        title: { display: true, text: '↑ 차트 공신력', color: '#475569' },
+        ticks: { display: false },
+        grid: { color: '#0e1a2b' }
+      }
+    }
+  }
+});
+
+// X 실시간 위젯
+const X_QUERIES = {
+  global: { q: '%23GlobalKChart', label: '#GlobalKChart', url: 'https://twitter.com/search?q=%23GlobalKChart&src=typed_query&f=live' },
+  kr:     { q: '%EA%B8%80%EB%A1%9C%EB%B2%8CK%EC%B0%A8%ED%8A%B8', label: '글로벌K차트', url: 'https://twitter.com/search?q=%EA%B8%80%EB%A1%9C%EB%B2%8C+K%EC%B0%A8%ED%8A%B8&src=typed_query&f=live' },
+  melon:  { q: 'Melon+chart+kpop+Global', label: 'Melon chart kpop', url: 'https://twitter.com/search?q=Melon+chart+kpop+Global&src=typed_query&f=live' },
+};
+let xWidgetLoaded = false;
+let currentXFeed = 'global';
+
+function loadXWidget(feedKey) {
+  const inner = document.getElementById('xWidgetInner');
+  const loading = document.getElementById('xLoading');
+  const blockedMsg = document.getElementById('xBlockedMsg');
+  if (!inner) return;
+
+  inner.innerHTML = '';
+  if (loading) loading.style.display = 'flex';
+
+  const q = X_QUERIES[feedKey] || X_QUERIES.global;
+
+  // Twitter 공식 타임라인 위젯 (twitter-timeline anchor 방식)
+  inner.innerHTML = `<a class="twitter-timeline"
+    data-theme="dark"
+    data-chrome="nofooter noborders transparent"
+    data-tweet-limit="8"
+    data-dnt="true"
+    data-lang="ko"
+    href="https://twitter.com/search?q=${q.q}&f=live"
+    style="display:block;min-height:480px;">
+    ${q.label} 트윗 불러오는 중...
+  </a>`;
+
+  // widgets.js 로드
+  const existing = document.getElementById('twitter-wjs');
+  if (existing) existing.remove();
+
+  const s = document.createElement('script');
+  s.id = 'twitter-wjs';
+  s.src = 'https://platform.twitter.com/widgets.js';
+  s.charset = 'utf-8';
+  s.async = true;
+  s.onload = () => {
+    if (window.twttr && window.twttr.widgets) {
+      window.twttr.widgets.load(inner).then(() => {
+        if (loading) loading.style.display = 'none';
+      });
+    } else {
+      if (loading) loading.style.display = 'none';
+    }
+  };
+  s.onerror = () => {
+    if (loading) loading.style.display = 'none';
+    if (blockedMsg) blockedMsg.style.display = 'block';
+    inner.innerHTML = `
+      <div style="padding:40px 20px;text-align:center;color:var(--text-dim);">
+        <div style="font-size:32px;margin-bottom:12px;">𝕏</div>
+        <div style="font-size:12px;margin-bottom:16px;line-height:1.7;">X 위젯 스크립트가 현재 환경에서 차단되었습니다.<br>사내 방화벽 또는 브라우저 확장프로그램을 확인해 주세요.</div>
+        <a href="${q.url}" target="_blank"
+           style="display:inline-block;padding:10px 20px;background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.3);border-radius:4px;color:var(--accent);text-decoration:none;font-family:'Space Mono',monospace;font-size:11px;">
+          X에서 직접 ${q.label} 보기 →
+        </a>
+      </div>`;
+  };
+  document.body.appendChild(s);
+  // 6초 후에도 로딩 중이면 숨김
+  setTimeout(() => { if (loading) loading.style.display = 'none'; }, 6000);
+}
+
+function showXFeed(key) {
+  currentXFeed = key;
+  ['global','kr','melon'].forEach(k => {
+    const btn = document.getElementById('xbtn' + k.charAt(0).toUpperCase() + k.slice(1));
+    if (btn) btn.classList.toggle('active', k === key);
+  });
+  loadXWidget(key);
+}
+
+// 해외 탭 열릴 때 위젯 자동 로드
+function switchCommTab(tab) {
+  document.getElementById('panelDomestic').style.display = tab === 'domestic' ? 'block' : 'none';
+  document.getElementById('panelGlobal').style.display   = tab === 'global'   ? 'block' : 'none';
+  document.getElementById('tabDomestic').classList.toggle('active-tab', tab === 'domestic');
+  document.getElementById('tabGlobal').classList.toggle('active-tab',   tab === 'global');
+  if (tab === 'global' && !xWidgetLoaded) {
+    xWidgetLoaded = true;
+    loadXWidget('global');
+  }
+}
+
+// 커뮤니티 보드 필터
+function filterComm(tone) {
+  const items = document.querySelectorAll('#commBoard .comm-item');
+  items.forEach(item => {
+    if (tone === 'all' || item.dataset.tone === tone) {
+      item.style.display = 'block';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+  document.querySelectorAll('#commFilterBtns .cfbtn, [data-filter]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === tone);
+  });
+}
+
+function filterGlobal(tone) {
+  const items = document.querySelectorAll('#globalBoard .comm-item');
+  items.forEach(item => {
+    item.style.display = (tone === 'all' || item.dataset.gtone === tone) ? 'block' : 'none';
+  });
+  document.querySelectorAll('[data-gf]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.gf === tone);
+  });
+}
+
+// ── Auto-update: data/analysis.json 로드 ──────────────────────────────────
+let allFetchedArticles = [];
+let sentimentDonutChart = null;
+let sentimentTrendChart = null;
+let keywordBarChart = null;
+
+// ── 인라인 샘플 데이터 (fetch 실패 시 폴백 / 미리보기용) ─────────────────
+const SAMPLE_DATA = {
+  last_updated: "2026-06-04T09:00:00+09:00",
+  summary: { total_articles: 42, positive: 19, neutral: 13, negative: 10, positive_pct: 45, neutral_pct: 31, negative_pct: 24 },
+  key_insight: "론칭 초기 국내외 반응은 '팬덤 활동 지수 포함'이라는 차별화 포인트에 대한 기대와, 조작 가능성 및 서구 시장 미포함에 대한 우려가 공존. 에스파 3관왕은 중국 팬덤 편중 논란을 키웠으나, 동시에 차트의 실질적 영향력을 증명. 단기적으로 가중치 투명성 확보가 공신력의 핵심 변수.",
+  main_positive_themes: ["팬덤 활동지수 차별화", "한중일 협력 의의", "K팝 전용 표준 가능성"],
+  main_negative_themes: ["서구 시장 미포함", "조작·어뷰징 우려", "집계 산식 불투명"],
+  keywords: [
+    { keyword: "팬덤 활동지수", count: 28, sentiment_bias: "neutral" },
+    { keyword: "에스파", count: 24, sentiment_bias: "positive" },
+    { keyword: "글로벌 스탠더드", count: 21, sentiment_bias: "positive" },
+    { keyword: "텐센트뮤직", count: 19, sentiment_bias: "neutral" },
+    { keyword: "조작 우려", count: 17, sentiment_bias: "negative" },
+    { keyword: "라인뮤직", count: 15, sentiment_bias: "neutral" },
+    { keyword: "투명성 부족", count: 14, sentiment_bias: "negative" },
+    { keyword: "한중일 통합", count: 13, sentiment_bias: "positive" },
+    { keyword: "빌보드 비교", count: 11, sentiment_bias: "neutral" },
+    { keyword: "서구 시장 배제", count: 10, sentiment_bias: "negative" },
+    { keyword: "스트리밍 집계", count: 9, sentiment_bias: "neutral" },
+    { keyword: "K팝 차트 표준", count: 8, sentiment_bias: "positive" }
+  ],
+  sentiment_trend: [
+    { date: "05/26", positive: 3, neutral: 2, negative: 1 },
+    { date: "05/27", positive: 2, neutral: 1, negative: 1 },
+    { date: "05/28", positive: 4, neutral: 3, negative: 2 },
+    { date: "05/29", positive: 2, neutral: 1, negative: 1 },
+    { date: "05/30", positive: 1, neutral: 2, negative: 0 },
+    { date: "05/31", positive: 1, neutral: 1, negative: 1 },
+    { date: "06/01", positive: 4, neutral: 2, negative: 3 },
+    { date: "06/02", positive: 1, neutral: 1, negative: 1 },
+    { date: "06/03", positive: 1, neutral: 0, negative: 0 },
+  ],
+  articles: [
+    { uid:"a01", title:"멜론, 한·중·일 '글로벌 K차트' 첫 공개…일간·주간·월간 1위 모두 에스파", url:"https://www.dt.co.kr/article/12065343", published:"Mon, 01 Jun 2026 14:00:00 +0900", snippet:"카카오엔터테인먼트 뮤직플랫폼 멜론이 1일 오후 12시 중국 텐센트 뮤직 엔터테인먼트, 일본 라인뮤직과 함께 '글로벌 K-차트'를 처음 공개했다.", source:"naver_news", sentiment:"positive", sentiment_score:0.78, sentiment_reason:"첫 공개 성과 긍정 보도", key_topics:["에스파","론칭","1위"] },
+    { uid:"a02", title:"카카오엔터 멜론, '글로벌-K 차트' 집계기준 공개…빌보드 '아티스트 100' 역할 할까", url:"https://www.fnnews.com/news/202605281157019419", published:"Thu, 28 May 2026 11:57:00 +0900", snippet:"팬덤 활동 지표까지 합산하는 전세계 유일한 K팝 차트가 될 것으로 전망", source:"naver_news", sentiment:"positive", sentiment_score:0.71, sentiment_reason:"빌보드 대항마 기대감", key_topics:["집계기준","팬덤지수","빌보드"] },
+    { uid:"a03", title:"K-Pop's new 'Global K-Chart' to include 'fan activity' data", url:"https://musically.com/2026/05/28/k-pops-new-global-k-chart-to-include-fan-activity-data/", published:"Thu, 28 May 2026 10:00:00 +0000", snippet:"The fan activity index is novel — no other major chart includes fandom engagement signals like likes and follows.", source:"google_news", sentiment:"neutral", sentiment_score:0.55, sentiment_reason:"차별화 인정하되 조작 가능성 유보", key_topics:["fan activity","methodology","Music Ally"] },
+    { uid:"a04", title:"멜론, 中텐센트·日라인 손잡고 '글로벌-K 차트' 신설", url:"https://www.kmib.co.kr/article/view.asp?arcid=0029874999", published:"Mon, 26 May 2026 15:03:00 +0900", snippet:"한·중·일 주요 음악 플랫폼의 K팝 이용 데이터를 통합 집계해 실시간 글로벌 K팝 흐름을 보여주는 방식", source:"naver_news", sentiment:"positive", sentiment_score:0.66, sentiment_reason:"3사 협력 구조 긍정 보도", key_topics:["MOU","한중일","협력"] },
+    { uid:"a05", title:"Kakao's Melon, Tencent Music, and Line Music to launch unified K-pop chart", url:"https://www.musicbusinessworldwide.com/kakaos-melon-tencent-music-and-line-music-to-launch-unified-k-pop-chart-in-june-that-pools-streaming-data-from-south-korea-china-and-japan/", published:"Mon, 26 May 2026 11:04:00 +0000", snippet:"The chart will aggregate K-pop streaming and engagement data from Kakao's Melon in South Korea, Tencent Music's platforms in China and Southeast Asia, and Line Music in Japan.", source:"google_news", sentiment:"neutral", sentiment_score:0.58, sentiment_reason:"사실 중심 보도, 영향력은 관망", key_topics:["MBW","streaming","unified chart"] },
+    { uid:"a06", title:"멜론 글로벌 K차트 기준에 '팬덤 활동지수' 포함 - 스포츠경향", url:"https://sports.khan.co.kr/article/202605281046003", published:"Thu, 28 May 2026 10:46:00 +0900", snippet:"음원 스트리밍 뿐 아니라 팬덤의 활동 지수까지 포함해 트렌드를 보여주는 새로운 기준", source:"naver_news", sentiment:"positive", sentiment_score:0.62, sentiment_reason:"새 기준 제시 긍정 톤", key_topics:["활동지수","스트리밍","새기준"] },
+    { uid:"a07", title:"New Global K-Pop Chart Announced by Asian Music Giants!", url:"https://respawn.outlookindia.com/pop-culture/pop-culture-news/global-k-chart-melon-tencent-line-music", published:"Fri, 29 May 2026 08:00:00 +0000", snippet:"The alliance indicates a new phase of K-pop's global expansion, where competing companies are collaborating.", source:"google_news", sentiment:"positive", sentiment_score:0.74, sentiment_reason:"인도 팬미디어 협력 의미 높게 평가", key_topics:["인도","Asian platforms","expansion"] },
+    { uid:"a08", title:"멜론 글로벌 K차트 기준은?...팬 활동 지표도 반영", url:"https://zdnet.co.kr/view/?no=20260528181739", published:"Thu, 28 May 2026 18:17:00 +0900", snippet:"가중치 공개 수준이 낮아 외부 검증이 어렵다는 지적도 나온다", source:"naver_news", sentiment:"negative", sentiment_score:0.62, sentiment_reason:"집계 투명성 부족 비판", key_topics:["투명성","가중치","검증"] },
+    { uid:"a09", title:"Melon and Tencent Music Tee Up 'Global-K Chart' for K-Pop Acts", url:"https://www.digitalmusicnews.com/2026/05/28/global-k-chart-launch/", published:"Thu, 28 May 2026 09:00:00 +0000", snippet:"Whether the Global-K Chart will carry enough authority to matter outside the three participating markets remains to be seen.", source:"google_news", sentiment:"neutral", sentiment_score:0.51, sentiment_reason:"외부 권위 확보 여부 불확실", key_topics:["authority","manipulation","fan metrics"] },
+    { uid:"a10", title:"합중일 통합 '글로벌 K-차트' 나온다…멜론, 팬 활동까지 반영", url:"https://www.tenasia.co.kr/article/2026052847414", published:"Thu, 28 May 2026 09:00:00 +0900", snippet:"기존 음원 소비량 중심 차트와 달리 팬덤 활동까지 함께 반영해 아티스트 영향력을 보다 입체적으로 보여주는 데 초점", source:"naver_news", sentiment:"positive", sentiment_score:0.68, sentiment_reason:"팬덤 반영 차별화 긍정 평가", key_topics:["팬덤","입체적","아티스트 영향력"] }
+  ],
+  note: "⚡ 샘플 데이터 — GitHub Actions 첫 실행 후 실제 수집 데이터로 교체됩니다"
+};
+
+async function loadAnalysisData() {
+  try {
+    const resp = await fetch('data/analysis.json?t=' + Date.now());
+    if (!resp.ok) throw new Error('fetch failed');
+    const data = await resp.json();
+    if (!data.summary || data.summary.total_articles === 0) {
+      // fetch는 됐지만 데이터 없음 → 샘플로 폴백
+      renderDashboard(SAMPLE_DATA);
+      showSampleBadge();
+      return;
+    }
+    renderDashboard(data);
+  } catch (e) {
+    // fetch 자체 실패 (로컬 파일, CORS 등) → 샘플 데이터로 표시
+    renderDashboard(SAMPLE_DATA);
+    showSampleBadge();
+  }
+}
+
+function showSampleBadge() {
+  const el = document.getElementById('lastUpdated');
+  if (el) el.textContent = '샘플 데이터 (GitHub Actions 실행 전)';
+  const dot = document.getElementById('updateDot');
+  if (dot) { dot.style.background = 'var(--warn)'; dot.style.boxShadow = '0 0 6px var(--warn)'; }
+}
+
+function renderDashboard(data) {
+  const updated = data.last_updated
+    ? new Date(data.last_updated).toLocaleString('ko-KR', { timeZone:'Asia/Seoul', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })
+    : '알 수 없음';
+  document.getElementById('lastUpdated').textContent = updated;
+  const dot = document.getElementById('updateDot');
+  dot.style.background = 'var(--accent4)';
+  dot.style.boxShadow = '0 0 8px var(--accent4)';
+
+  const s = data.summary || {};
+  document.getElementById('kpiTotal').textContent = s.total_articles || 0;
+  document.getElementById('kpiPos').textContent = (s.positive_pct || 0) + '%';
+  document.getElementById('kpiNeu').textContent = (s.neutral_pct || 0) + '%';
+  document.getElementById('kpiNeg').textContent = (s.negative_pct || 0) + '%';
+
+  // AI 인사이트 (항상 표시)
+  if (data.key_insight) {
+    document.getElementById('aiInsightText').textContent = data.key_insight;
+    const themesEl = document.getElementById('aiThemes');
+    themesEl.innerHTML = '';
+    (data.main_positive_themes || []).forEach(t => {
+      themesEl.innerHTML += `<span style="font-size:10px;padding:3px 8px;border-radius:2px;background:rgba(16,185,129,0.12);color:var(--accent4);border:1px solid rgba(16,185,129,0.25);font-family:'Space Mono',monospace;">✅ ${t}</span>`;
+    });
+    (data.main_negative_themes || []).forEach(t => {
+      themesEl.innerHTML += `<span style="font-size:10px;padding:3px 8px;border-radius:2px;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);font-family:'Space Mono',monospace;">⚠️ ${t}</span>`;
+    });
+  }
+
+  // 감성 도넛
+  const donutCtx = document.getElementById('sentimentDonut').getContext('2d');
+  if (sentimentDonutChart) sentimentDonutChart.destroy();
+  sentimentDonutChart = new Chart(donutCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['긍정', '중립', '부정'],
+      datasets: [{ data: [s.positive||0, s.neutral||0, s.negative||0],
+        backgroundColor: ['rgba(16,185,129,0.75)','rgba(245,158,11,0.7)','rgba(239,68,68,0.75)'],
+        borderWidth: 0, hoverOffset: 6 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, cutout:'68%' }
+  });
+  document.getElementById('sentimentLegend').innerHTML =
+    `<span><span style="color:var(--accent4);">■</span> 긍정 ${s.positive||0}건</span>
+     <span><span style="color:var(--warn);">■</span> 중립 ${s.neutral||0}건</span>
+     <span><span style="color:var(--danger);">■</span> 부정 ${s.negative||0}건</span>`;
+
+  // 감성 트렌드
+  const trend = data.sentiment_trend || [];
+  const trendCtx = document.getElementById('sentimentTrend').getContext('2d');
+  if (sentimentTrendChart) sentimentTrendChart.destroy();
+  sentimentTrendChart = new Chart(trendCtx, {
+    type: 'line',
+    data: {
+      labels: trend.map(d => d.date),
+      datasets: [
+        { label:'긍정', data:trend.map(d=>d.positive), borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.08)', tension:0.4, fill:true, borderWidth:2, pointRadius:3 },
+        { label:'중립', data:trend.map(d=>d.neutral),  borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,0.05)', tension:0.4, fill:true, borderWidth:2, pointRadius:3 },
+        { label:'부정', data:trend.map(d=>d.negative), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.06)', tension:0.4, fill:true, borderWidth:2, pointRadius:3 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ font:{size:10}, color:'#94a3b8', boxWidth:10, padding:10 } } },
+      scales:{
+        x:{ grid:{color:'#1e2d42'}, ticks:{color:'#64748b',font:{size:10}} },
+        y:{ grid:{color:'#1e2d42'}, ticks:{color:'#64748b',font:{size:10},stepSize:1}, beginAtZero:true }
+      }
+    }
+  });
+
+  // 키워드 클라우드
+  const keywords = (data.keywords||[]).slice(0,30);
+  const cloud = document.getElementById('keywordCloud');
+  cloud.innerHTML = '';
+  const maxCount = Math.max(...keywords.map(k=>k.count), 1);
+  const cMap = {positive:'var(--accent4)', neutral:'var(--warn)', negative:'var(--danger)'};
+  const bgMap = {positive:'rgba(16,185,129,0.1)', neutral:'rgba(245,158,11,0.08)', negative:'rgba(239,68,68,0.1)'};
+  const bdMap = {positive:'rgba(16,185,129,0.25)', neutral:'rgba(245,158,11,0.25)', negative:'rgba(239,68,68,0.25)'};
+  keywords.forEach(kw => {
+    const size = 10 + Math.round((kw.count/maxCount)*14);
+    const b = kw.sentiment_bias || 'neutral';
+    cloud.innerHTML += `<span style="font-size:${size}px;padding:4px 10px;border-radius:3px;background:${bgMap[b]};color:${cMap[b]};border:1px solid ${bdMap[b]};cursor:default;" title="${kw.count}회 언급">${kw.keyword}</span>`;
+  });
+
+  // 키워드 바 차트
+  const top10 = keywords.slice(0,10);
+  const barCtx = document.getElementById('keywordBar').getContext('2d');
+  if (keywordBarChart) keywordBarChart.destroy();
+  keywordBarChart = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: top10.map(k=>k.keyword),
+      datasets: [{ label:'언급 빈도', data:top10.map(k=>k.count),
+        backgroundColor: top10.map(k => {
+          const b = k.sentiment_bias||'neutral';
+          return b==='positive'?'rgba(16,185,129,0.65)':b==='negative'?'rgba(239,68,68,0.65)':'rgba(245,158,11,0.65)';
+        }), borderRadius:3, borderWidth:0 }]
+    },
+    options: {
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ grid:{color:'#1e2d42'}, ticks:{color:'#64748b',font:{size:10}} },
+        y:{ grid:{display:false}, ticks:{color:'#94a3b8',font:{size:11}} }
+      }
+    }
+  });
+
+  // 기사 목록
+  allFetchedArticles = data.articles || [];
+  renderArticles('all');
+}
+
+function renderArticles(filter) {
+  const list = document.getElementById('articleList');
+  const noDataEl = document.getElementById('noDataMsg');
+  const countEl = document.getElementById('articleCount');
+  const filtered = filter==='all' ? allFetchedArticles : allFetchedArticles.filter(a=>a.sentiment===filter);
+  document.querySelectorAll('#articleFilterBtns .cfbtn').forEach(b => b.classList.toggle('active', b.dataset.af===filter));
+  countEl.textContent = `${filtered.length}건 표시 중 (전체 ${allFetchedArticles.length}건)`;
+  if (!filtered.length) { list.innerHTML=''; noDataEl.style.display='block'; return; }
+  noDataEl.style.display='none';
+  const sColor={positive:'var(--accent4)',neutral:'var(--warn)',negative:'var(--danger)'};
+  const sLabel={positive:'긍정',neutral:'중립',negative:'부정'};
+  const sBg={positive:'rgba(16,185,129,0.1)',neutral:'rgba(245,158,11,0.08)',negative:'rgba(239,68,68,0.1)'};
+  list.innerHTML = filtered.slice(0,50).map(a => {
+    const s = a.sentiment||'neutral';
+    const score = a.sentiment_score ? Math.round(a.sentiment_score*100) : '—';
+    const topics = (a.key_topics||[]).slice(0,3).map(t=>
+      `<span style="font-size:9px;padding:2px 6px;border-radius:2px;background:var(--surface);color:var(--text-dim);border:1px solid var(--border);font-family:'Space Mono',monospace;">${t}</span>`
+    ).join('');
+    const srcLabel = a.source==='naver_news'?'네이버뉴스':'Google뉴스';
+    return `<div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid ${sColor[s]};border-radius:4px;padding:12px 16px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;">
+      <div>
+        <a href="${a.url}" target="_blank" rel="noopener" style="font-size:13px;font-weight:600;color:var(--text);text-decoration:none;line-height:1.4;display:block;margin-bottom:6px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text)'">${a.title}</a>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;">${(a.snippet||'').substring(0,120)}…</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--text-dim);">${srcLabel} · ${(a.published||'').substring(0,16)}</span>${topics}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="font-size:10px;padding:3px 8px;border-radius:2px;background:${sBg[s]};color:${sColor[s]};border:1px solid ${sColor[s]}44;font-family:'Space Mono',monospace;white-space:nowrap;">${sLabel[s]} ${score}%</div>
+        ${a.sentiment_reason?`<div style="font-size:9px;color:var(--text-dim);margin-top:5px;max-width:120px;text-align:right;line-height:1.4;">${a.sentiment_reason}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function filterArticles(f) { renderArticles(f); }
+loadAnalysisData();
+</script>
+</body>
+</html>
