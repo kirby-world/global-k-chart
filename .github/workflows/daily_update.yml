@@ -26,7 +26,7 @@ jobs:
 
       - name: 뉴스 수집 + Claude 감성/키워드 분석
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python scripts/fetch_and_analyze.py
 
       - name: 변경사항 커밋 & 푸시
