@@ -118,7 +118,7 @@ def call_gemini(prompt: str) -> str:
     if not api_key:
         raise EnvironmentError("GEMINI_API_KEY 환경변수가 없습니다. GitHub Secrets 등록 확인 필요.")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{gemini-2.0-flash}:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={api_key}"
     payload = json.dumps({
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
