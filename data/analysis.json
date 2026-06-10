@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-06-04T12:00:00+09:00",
+  "last_updated": "2026-06-10T21:41:47.480421+09:00",
   "summary": {
     "total_articles": 0,
     "positive": 0,
@@ -12,5 +12,7 @@
   "keywords": [],
   "articles": [],
   "sentiment_trend": [],
-  "note": "초기 상태 — GitHub Actions 첫 실행 후 데이터가 채워집니다"
+  "key_insight": "",
+  "main_positive_themes": [],
+  "main_negative_themes": []
 }
