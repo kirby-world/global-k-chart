@@ -1,0 +1,1690 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global K Chart — Prototype</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<style>
+  :root {
+    --font: 'Pretendard Variable', 'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; word-break: keep-all; }
+  body { background: #111; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 24px 0; font-family: var(--font); font-feature-settings: 'ss01'; -webkit-font-smoothing: antialiased; }
+
+  .phone {
+    width: 390px;
+    min-height: 844px;
+    background: #000;
+    border-radius: 48px;
+    overflow: hidden;
+    box-shadow: 0 0 0 10px #1a1a1a, 0 32px 80px rgba(0,0,0,0.7);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Status bar */
+  .statusbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 28px 0;
+    font-size: 15px; font-weight: 700; color: #fff; flex-shrink: 0;
+    letter-spacing: -0.3px;
+  }
+  .statusbar-right { display: flex; gap: 6px; align-items: center; }
+  .statusbar-right svg { width: 16px; height: 16px; fill: #fff; }
+
+  /* Hero */
+  .hero {
+    position: relative; overflow: hidden;
+    padding: 12px 20px 0;
+    background: linear-gradient(180deg, #0a1a0f 0%, #000 100%);
+    flex-shrink: 0;
+  }
+  .hero-bg {
+    position: absolute; top: 0; right: -10px;
+    width: 200px; height: 120px;
+    background: linear-gradient(135deg, #00c853 0%, #007a33 50%, transparent 100%);
+    clip-path: polygon(30% 0%, 100% 0%, 100% 100%, 0% 100%);
+    opacity: 0.5;
+  }
+  .hero-title {
+    font-size: 26px; font-weight: 900; color: #fff;
+    position: relative; z-index: 1; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 2px;
+    letter-spacing: -0.8px;
+  }
+  .hero-title span.k { color: #00d084; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 8px; padding: 0 20px 12px; background: #000; flex-shrink: 0; }
+  .tab {
+    padding: 6px 18px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    border: 1.5px solid #2a2a2a; color: #555; cursor: pointer; transition: all 0.2s;
+    background: transparent; letter-spacing: -0.2px; font-family: var(--font);
+  }
+  .tab.active { background: #00d084; border-color: #00d084; color: #000; font-weight: 700; }
+
+  /* Date bar */
+  .datebar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 20px; background: #000;
+    font-size: 12px; color: #555; flex-shrink: 0;
+    border-bottom: 1px solid #111; letter-spacing: -0.1px;
+  }
+  .datebar-left { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+  .chart-guide { color: #00d084; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+
+  /* Chart list */
+  .chart-list { flex: 1; overflow-y: auto; background: #000; padding-bottom: 80px; }
+  .chart-list::-webkit-scrollbar { display: none; }
+
+  /* Chart row */
+  .chart-row {
+    border-bottom: 1px solid #111;
+    transition: background 0.15s;
+  }
+  .chart-row-main {
+    display: flex; align-items: center;
+    padding: 12px 16px 10px;
+    gap: 10px; cursor: pointer;
+  }
+  .chart-row-main:active { background: #111; }
+
+  /* Rank */
+  .rank-block { width: 36px; text-align: center; flex-shrink: 0; }
+  .rank-num { font-size: 20px; font-weight: 800; color: #fff; line-height: 1; letter-spacing: -1px; }
+  .rank-change { font-size: 10px; margin-top: 3px; font-weight: 700; letter-spacing: 0; }
+  .rank-change.new { color: #00d084; }
+  .rank-change.up { color: #00d084; }
+  .rank-change.down { color: #ff4d6d; }
+  .rank-change.same { color: #444; }
+
+  /* Photo */
+  .artist-photo {
+    width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+    object-fit: cover; border: 2px solid #222;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; overflow: hidden;
+  }
+  .photo-placeholder {
+    width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; border: 2px solid #222;
+  }
+
+  /* 아티스트픽 gradient ring */
+  .artist-pick-ring {
+    width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+    padding: 2.5px;
+    background: conic-gradient(from 180deg, #00e87a, #00d4b4, #00aaff, #007bff, #00d084, #00e87a);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .artist-pick-ring .photo-placeholder {
+    width: 100%; height: 100%; border: none;
+    background: #000 !important;
+  }
+
+  /* Info */
+  .artist-info { flex: 1; min-width: 0; }
+  .artist-name { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.3px; }
+
+  /* Country pills */
+  .country-pills { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+  .cpill {
+    display: flex; align-items: center; gap: 3px;
+    background: #141414; border-radius: 4px;
+    padding: 2px 6px; font-size: 11px; font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+  .cpill .flag { font-size: 11px; }
+  .cpill .crank { color: #bbb; }
+  .cpill.kr { }
+  .cpill.jp { }
+  .cpill.cn { }
+
+  /* Badges */
+  .badges { display: flex; gap: 4px; flex-wrap: wrap; }
+  .badge {
+    padding: 2px 7px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; white-space: nowrap;
+    letter-spacing: -0.2px;
+  }
+  .badge.comeback { background: rgba(255,77,109,0.15); color: #ff4d6d; }
+  .badge.global { background: rgba(0,208,132,0.1); color: #00d084; }
+  .badge.streak { background: rgba(255,193,7,0.12); color: #ffc107; }
+  .badge.rise { background: rgba(124,58,237,0.15); color: #a78bfa; }
+  .badge.new-entry { background: rgba(37,99,235,0.15); color: #60a5fa; }
+  .badge.triple { background: rgba(255,193,7,0.2); color: #ffd700; border: 1px solid rgba(255,215,0,0.3); }
+
+  /* Row right */
+  .row-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+  .cheer-btn {
+    background: transparent; border: 1.5px solid #2a2a2a;
+    border-radius: 20px; padding: 4px 10px;
+    color: #ff4d6d; font-size: 11px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    display: flex; align-items: center; gap: 3px;
+    font-family: var(--font); letter-spacing: -0.2px;
+  }
+  .cheer-btn:hover { background: rgba(255,77,109,0.1); border-color: #ff4d6d; }
+  .cheer-btn.cheered { background: #ff4d6d; border-color: #ff4d6d; color: #fff; }
+  .expand-btn {
+    background: transparent; border: none;
+    color: #555; font-size: 18px; cursor: pointer;
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; transition: all 0.2s;
+  }
+  .expand-btn:hover { background: #1a1a1a; color: #888; }
+
+  /* Artist card (expanded) */
+  .artist-card {
+    margin: 0 12px 10px;
+    background: #1a1a2e;
+    border-radius: 16px;
+    overflow: hidden;
+    animation: slideDown 0.25s ease;
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-top {
+    padding: 16px;
+    background: linear-gradient(135deg, #1a1a35 0%, #0d0d22 100%);
+    display: flex; gap: 14px; align-items: center;
+  }
+  .card-artist-photo {
+    width: 64px; height: 64px; border-radius: 50%;
+    border: 2px solid #333;
+    font-size: 28px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden;
+  }
+  .card-artist-info { flex: 1; }
+  .card-artist-name { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.5px; }
+  .fandom-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 11px; font-weight: 700; margin-right: 4px;
+    background: rgba(0,208,132,0.15); color: #00d084;
+    border: 1px solid rgba(0,208,132,0.3);
+  }
+  .fandom-count { font-size: 11px; color: #555; margin-top: 4px; }
+
+  /* Country ranks in card */
+  .country-ranks-card {
+    padding: 12px 16px;
+    background: rgba(0,0,0,0.3);
+    display: flex; gap: 0;
+  }
+  .crank-item { flex: 1; text-align: center; }
+  .crank-item + .crank-item { border-left: 1px solid #2a2a3a; }
+  .crank-platform { font-size: 13px; color: #555; margin-bottom: 4px; }
+  .crank-num { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: -1px; }
+  .crank-platform-label { font-size: 10px; color: #444; margin-top: 2px; font-weight: 600; letter-spacing: 0; }
+
+  /* Cheering section */
+  .cheer-section { padding: 14px 16px 16px; }
+  .cheer-label { font-size: 11px; color: #555; margin-bottom: 8px; font-weight: 600; letter-spacing: -0.1px; }
+  .cheer-fandom-bar { margin-bottom: 14px; }
+  .fandom-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+  }
+  .fandom-rank-num { font-size: 12px; color: #666; width: 14px; flex-shrink: 0; }
+  .fandom-name-label { font-size: 12px; color: #bbb; width: 80px; flex-shrink: 0; font-weight: 600; letter-spacing: -0.2px; }
+  .fandom-bar-wrap { flex: 1; background: #1a1a1a; border-radius: 3px; height: 6px; overflow: hidden; }
+  .fandom-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+  .fandom-score { font-size: 11px; color: #555; width: 70px; text-align: right; flex-shrink: 0; }
+
+  .cheer-diff {
+    font-size: 12px; color: #ff4d6d; font-weight: 600;
+    text-align: center; margin-bottom: 12px;
+    padding: 6px; background: rgba(255,77,109,0.08); border-radius: 8px;
+  }
+
+  .big-cheer-btn {
+    width: 100%; padding: 13px;
+    background: linear-gradient(135deg, #ff4d6d, #e0335a);
+    border: none; border-radius: 12px;
+    color: #fff; font-size: 15px; font-weight: 800;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: var(--font); letter-spacing: -0.3px;
+  }
+  .big-cheer-btn:hover { transform: scale(1.02); }
+  .big-cheer-btn:active { transform: scale(0.98); }
+  .big-cheer-btn.done { background: linear-gradient(135deg, #333, #222); color: #666; cursor: default; }
+  .cheer-sub { font-size: 11px; color: #444; text-align: center; margin-top: 6px; }
+
+  /* Latest song */
+  .latest-song {
+    margin: 0 16px 14px;
+    background: rgba(0,0,0,0.3); border-radius: 10px;
+    padding: 10px 12px; display: flex; align-items: center; gap: 10px;
+  }
+  .song-thumb {
+    width: 40px; height: 40px; border-radius: 6px;
+    background: #2a2a3a; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .song-info { flex: 1; }
+  .song-title { font-size: 13px; font-weight: 600; color: #fff; }
+  .song-artist { font-size: 11px; color: #666; }
+  .play-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: #fff;
+    flex-shrink: 0;
+  }
+
+  /* Cheering feedback overlay */
+  .cheer-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 100; animation: fadeIn 0.2s ease;
+    display: none;
+  }
+  .cheer-overlay.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .cheer-anim {
+    font-size: 64px; margin-bottom: 16px;
+    animation: heartPop 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  }
+  @keyframes heartPop {
+    0% { transform: scale(0.3); opacity: 0; }
+    60% { transform: scale(1.3); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .cheer-result-title { font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 6px; letter-spacing: -0.5px; }
+  .cheer-result-sub { font-size: 13px; color: #888; margin-bottom: 24px; text-align: center; padding: 0 32px; font-weight: 500; }
+  .cheer-result-card {
+    background: #1a1a2e; border-radius: 16px;
+    padding: 20px 24px; margin: 0 24px 24px; width: calc(100% - 48px);
+    border: 1px solid #2a2a3a;
+  }
+  .result-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .result-row:last-child { margin-bottom: 0; }
+  .result-label { font-size: 12px; color: #555; font-weight: 500; }
+  .result-value { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+  .result-value.highlight { color: #ff4d6d; }
+  .result-value.green { color: #00d084; }
+
+  .cheer-actions { display: flex; gap: 10px; padding: 0 24px; width: 100%; }
+  .cheer-share-btn {
+    flex: 1; padding: 13px; border-radius: 12px;
+    background: #00d084; border: none;
+    color: #000; font-size: 14px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .cheer-close-btn {
+    flex: 1; padding: 13px; border-radius: 12px;
+    background: #1a1a1a; border: 1px solid #2a2a2a;
+    color: #888; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+
+  /* Streak info */
+  .streak-bar {
+    display: flex; gap: 8px; align-items: center; justify-content: center;
+    margin-top: 16px; padding: 10px 16px;
+    background: rgba(255,193,7,0.08); border-radius: 10px;
+    border: 1px solid rgba(255,193,7,0.15);
+  }
+  .streak-text { font-size: 13px; color: #ffc107; font-weight: 600; }
+  .streak-sub { font-size: 12px; color: #555; }
+
+  /* 게시판 floating btn */
+  .float-btn {
+    position: absolute; bottom: 90px; right: 20px;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, #00d084, #00a86b);
+    border: none; cursor: pointer; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 20px rgba(0,208,132,0.4);
+    font-size: 22px;
+    transition: all 0.2s;
+    display: none;
+  }
+  .float-btn.show { display: flex; }
+  .float-btn:hover { transform: scale(1.1); }
+  .float-btn-label {
+    position: absolute; bottom: 90px; right: 78px;
+    background: #1a2a22; border: 1px solid #00d084;
+    color: #00d084; font-size: 11px; font-weight: 600;
+    padding: 5px 10px; border-radius: 20px;
+    white-space: nowrap; z-index: 50;
+    display: none;
+  }
+  .float-btn-label.show { display: block; }
+
+  /* 게시판 modal */
+  .board-modal {
+    position: absolute; inset: 0;
+    background: #000; z-index: 200;
+    display: flex; flex-direction: column;
+    transform: translateY(100%); transition: transform 0.3s ease;
+  }
+  .board-modal.open { transform: translateY(0); }
+  .board-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 20px 12px;
+    border-bottom: 1px solid #111;
+  }
+  .board-title { font-size: 17px; font-weight: 800; color: #fff; letter-spacing: -0.4px; }
+  .board-close { background: none; border: none; color: #444; font-size: 20px; cursor: pointer; padding: 4px 8px; font-family: var(--font); }
+  .board-subtitle { font-size: 11px; color: #444; margin-top: 3px; font-weight: 500; }
+  .board-filters {
+    display: flex; gap: 6px; padding: 12px 16px;
+    border-bottom: 1px solid #111;
+  }
+  .filter-chip {
+    padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    border: 1px solid #1e1e1e; color: #444; cursor: pointer; transition: all 0.2s;
+    background: transparent; font-family: var(--font); letter-spacing: -0.2px;
+  }
+  .filter-chip.active { background: #00d084; border-color: #00d084; color: #000; font-weight: 700; }
+  .board-messages { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .board-messages::-webkit-scrollbar { display: none; }
+  .msg-row {
+    padding: 12px 16px; border-bottom: 1px solid #0a0a0a;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .msg-avatar {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: #000;
+  }
+  .msg-body { flex: 1; }
+  .msg-top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .msg-fandom { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+  .msg-country { font-size: 10px; padding: 2px 6px; background: #1a1a1a; border-radius: 4px; color: #666; }
+  .msg-time { font-size: 10px; color: #333; margin-left: auto; }
+  .msg-text { font-size: 13px; color: #ccc; line-height: 1.5; font-weight: 400; }
+  .board-input-bar {
+    padding: 12px 16px; border-top: 1px solid #111;
+    background: #000;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .board-input {
+    flex: 1; background: #111; border: 1px solid #1e1e1e; border-radius: 20px;
+    padding: 9px 14px; color: #ccc; font-size: 13px;
+    outline: none; font-family: var(--font); font-weight: 400;
+  }
+  .board-input:focus { border-color: #00d084; }
+  .board-send {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #00d084; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+    flex-shrink: 0;
+  }
+  .board-locked {
+    font-size: 11px; color: #333; text-align: center;
+    padding: 8px 0;
+  }
+
+  /* ─── Fandom Leaderboard ─── */
+  .fandom-board {
+    background: #000; border-bottom: 1px solid #111;
+    flex-shrink: 0; overflow: hidden;
+    transition: max-height 0.35s ease;
+  }
+  .fboard-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px 8px;
+  }
+  .fboard-title {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 800; color: #fff; letter-spacing: -0.3px;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #ff4d6d;
+    animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.7); }
+  }
+  .fboard-update { font-size: 10px; color: #333; font-weight: 500; }
+  .fboard-more-btn {
+    background: none; border: none; color: #444; font-size: 11px;
+    font-weight: 700; cursor: pointer; font-family: var(--font);
+    padding: 4px 8px; border-radius: 6px; transition: color 0.2s;
+    letter-spacing: -0.1px;
+  }
+  .fboard-more-btn:hover { color: #00d084; }
+
+  .fboard-rows { padding: 0 12px 10px; }
+  .fboard-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 4px; border-radius: 8px;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .fboard-row:hover { background: #0d0d0d; }
+  .fboard-rank {
+    font-size: 13px; font-weight: 900; letter-spacing: -0.5px;
+    width: 18px; text-align: center; flex-shrink: 0;
+  }
+  .fboard-rank.r1 { color: #ffd700; }
+  .fboard-rank.r2 { color: #b0b8c8; }
+  .fboard-rank.r3 { color: #cd7f32; }
+  .fboard-rank.rx { color: #444; }
+  .fboard-avatar {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: #000;
+  }
+  .fboard-info { flex: 1; min-width: 0; }
+  .fboard-name {
+    font-size: 13px; font-weight: 700; color: #fff; letter-spacing: -0.2px;
+    display: flex; align-items: center; gap: 5px; margin-bottom: 3px;
+  }
+  .fboard-artist { font-size: 10px; color: #444; font-weight: 500; }
+  .fboard-bar-wrap { width: 72px; flex-shrink: 0; }
+  .fboard-bar-bg { background: #141414; border-radius: 3px; height: 4px; overflow: hidden; }
+  .fboard-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .fboard-score { font-size: 11px; color: #555; font-weight: 600; width: 56px; text-align: right; flex-shrink: 0; letter-spacing: -0.2px; }
+  .fboard-change { font-size: 10px; font-weight: 700; flex-shrink: 0; width: 20px; text-align: center; }
+  .fboard-change.up { color: #00d084; }
+  .fboard-change.same { color: #333; }
+
+  /* ─── Artist card content tabs ─── */
+  .card-tabs {
+    display: flex; border-bottom: 1px solid #1a1a2e;
+    padding: 0 16px; gap: 0;
+  }
+  .card-tab {
+    flex: 1; padding: 10px 0; text-align: center;
+    font-size: 12px; font-weight: 700; color: #444;
+    border-bottom: 2px solid transparent; cursor: pointer;
+    transition: all 0.2s; letter-spacing: -0.2px;
+    background: none; border-top: none; border-left: none; border-right: none;
+    font-family: var(--font);
+  }
+  .card-tab.active { color: #00d084; border-bottom-color: #00d084; }
+
+  .card-content-panel { display: none; }
+  .card-content-panel.active { display: block; }
+
+  /* Songs list in card */
+  .card-songs { padding: 6px 16px 12px; }
+  .card-song-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid #111;
+  }
+  .card-song-row:last-child { border-bottom: none; }
+  .csong-num { font-size: 13px; font-weight: 700; color: #333; width: 16px; flex-shrink: 0; text-align: center; }
+  .csong-thumb {
+    width: 38px; height: 38px; border-radius: 6px; flex-shrink: 0;
+    background: #1a1a2e; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; border: 1px solid #2a2a3a;
+  }
+  .csong-info { flex: 1; min-width: 0; }
+  .csong-title { font-size: 13px; font-weight: 600; color: #fff; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .csong-meta { font-size: 10px; color: #444; margin-top: 2px; font-weight: 500; }
+  .csong-play {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    background: #1a1a2e; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 11px; color: #aaa;
+  }
+  .csong-play:hover { background: #252540; color: #fff; }
+
+  /* Video / content in card */
+  .card-videos { padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .card-video-item {
+    background: #0d0d1a; border-radius: 10px; overflow: hidden;
+    border: 1px solid #1a1a2e; cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .card-video-item:hover { border-color: #2a2a4a; }
+  .video-thumb {
+    width: 100%; height: 90px; background: linear-gradient(135deg, #1a1a2e, #0d0d1a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; position: relative;
+  }
+  .video-play-overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.35);
+  }
+  .video-play-icon {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #fff; border: 1.5px solid rgba(255,255,255,0.3);
+  }
+  .video-meta { padding: 8px 10px 10px; }
+  .video-title { font-size: 12px; font-weight: 700; color: #ddd; letter-spacing: -0.2px; margin-bottom: 3px; }
+  .video-sub { font-size: 10px; color: #444; font-weight: 500; display: flex; gap: 8px; }
+
+  /* Insight panel in card */
+  .card-insight { padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .insight-chip {
+    background: #0d0d1a; border: 1px solid #1a1a2e; border-radius: 10px;
+    padding: 10px 12px; display: flex; align-items: flex-start; gap: 10px;
+  }
+  .insight-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .insight-body {}
+  .insight-label { font-size: 10px; color: #555; font-weight: 600; margin-bottom: 3px; letter-spacing: 0; }
+  .insight-text { font-size: 12px; color: #bbb; font-weight: 500; line-height: 1.5; }
+  .insight-text strong { color: #00d084; font-weight: 800; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    height: 72px; background: #0a0a0a; border-top: 1px solid #111;
+    display: flex; align-items: flex-start; padding-top: 8px;
+    flex-shrink: 0;
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    cursor: pointer; padding: 4px 0;
+  }
+  .nav-icon { font-size: 20px; }
+  .nav-label { font-size: 10px; color: #444; font-weight: 600; letter-spacing: -0.2px; }
+  .nav-item.active .nav-label { color: #00d084; }
+  .nav-item.active .nav-icon { filter: none; }
+
+  /* Mini player */
+  .mini-player {
+    background: #111; border-top: 1px solid #1a1a1a;
+    padding: 8px 16px; display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .mp-info { flex: 1; }
+  .mp-title { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+  .mp-artist { font-size: 11px; color: #555; font-weight: 500; }
+  .mp-controls { display: flex; gap: 12px; align-items: center; }
+  .mp-btn { background: none; border: none; color: #888; font-size: 18px; cursor: pointer; }
+  .mp-play { color: #fff; font-size: 22px; }
+  .mp-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: #222; }
+  .mp-progress-fill { height: 100%; background: #00d084; width: 35%; }
+  .mini-player { position: relative; }
+
+  /* ─── Share Card Modal ─── */
+  .share-modal {
+    position: absolute; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.92); backdrop-filter: blur(6px);
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    padding: 0; overflow-y: auto;
+    transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.34,1.06,0.64,1);
+  }
+  .share-modal.open { transform: translateY(0); }
+  .share-modal::-webkit-scrollbar { display: none; }
+
+  .share-modal-header {
+    width: 100%; display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 20px 12px; flex-shrink: 0;
+  }
+  .share-modal-title { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -0.4px; }
+  .share-modal-close {
+    background: #1a1a1a; border: none; color: #888; font-size: 14px;
+    width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-family: var(--font);
+  }
+
+  /* The card itself (shareable) */
+  .share-card {
+    width: calc(100% - 32px); margin: 0 16px;
+    background: linear-gradient(145deg, #0d0d1f 0%, #111125 50%, #0a1a0f 100%);
+    border-radius: 20px; overflow: hidden;
+    border: 1px solid rgba(0,208,132,0.2);
+    box-shadow: 0 0 40px rgba(0,208,132,0.08);
+    flex-shrink: 0;
+  }
+
+  .sc-top {
+    padding: 18px 18px 14px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .sc-logo { font-size: 11px; font-weight: 900; color: #00d084; letter-spacing: -0.3px; }
+  .sc-logo span { color: #fff; }
+  .sc-divider { width: 1px; height: 14px; background: #2a2a2a; }
+  .sc-date { font-size: 10px; color: #333; font-weight: 500; }
+  .sc-badge {
+    margin-left: auto; background: rgba(0,208,132,0.12);
+    border: 1px solid rgba(0,208,132,0.25); border-radius: 6px;
+    padding: 3px 8px; font-size: 10px; color: #00d084; font-weight: 700;
+  }
+
+  .sc-artist {
+    padding: 14px 18px 0;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .sc-artist-emoji {
+    width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 24px;
+    border: 2px solid rgba(255,255,255,0.1);
+  }
+  .sc-artist-info {}
+  .sc-artist-name { font-size: 17px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+  .sc-fandom-badge {
+    display: inline-block; margin-top: 4px;
+    padding: 2px 9px; border-radius: 5px; font-size: 11px; font-weight: 700;
+  }
+
+  .sc-ranks {
+    display: flex; gap: 8px; padding: 12px 18px;
+  }
+  .sc-rank-pill {
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,0.04); border-radius: 8px;
+    padding: 6px 10px; flex: 1; justify-content: center;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .sc-rank-flag { font-size: 14px; }
+  .sc-rank-num { font-size: 16px; font-weight: 900; letter-spacing: -0.5px; }
+  .sc-rank-label { font-size: 9px; color: #444; font-weight: 600; margin-top: 1px; }
+
+  /* Heatmap */
+  .sc-heatmap-wrap {
+    margin: 0 18px 14px;
+    background: rgba(0,0,0,0.4); border-radius: 12px;
+    overflow: hidden; border: 1px solid rgba(255,255,255,0.05);
+    position: relative;
+  }
+  .sc-heatmap-title {
+    position: absolute; top: 8px; left: 10px; z-index: 2;
+    font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.5);
+    letter-spacing: 0.2px;
+  }
+  .sc-heatmap-canvas { display: block; width: 100%; height: 130px; }
+
+  /* Top countries */
+  .sc-countries {
+    padding: 0 18px 14px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  }
+  .sc-country {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.03); border-radius: 8px;
+    padding: 7px 10px;
+  }
+  .sc-country-flag { font-size: 16px; flex-shrink: 0; }
+  .sc-country-info { flex: 1; min-width: 0; }
+  .sc-country-name { font-size: 11px; font-weight: 700; color: #ddd; letter-spacing: -0.2px; }
+  .sc-country-score { font-size: 10px; color: #444; font-weight: 500; margin-top: 1px; }
+  .sc-country-bar { width: 100%; height: 3px; background: #111; border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  .sc-country-bar-fill { height: 100%; border-radius: 2px; }
+
+  .sc-footer {
+    padding: 10px 18px 16px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .sc-total { }
+  .sc-total-label { font-size: 10px; color: #333; font-weight: 500; }
+  .sc-total-score { font-size: 18px; font-weight: 900; color: #fff; letter-spacing: -0.8px; margin-top: 1px; }
+  .sc-total-score span { color: #00d084; }
+  .sc-watermark { font-size: 10px; color: #222; font-weight: 700; letter-spacing: 0.5px; }
+
+  /* Share action buttons */
+  .share-actions {
+    display: flex; gap: 8px; padding: 14px 16px 8px; width: 100%; flex-shrink: 0;
+  }
+  .share-action-btn {
+    flex: 1; padding: 12px 8px; border-radius: 12px;
+    border: none; cursor: pointer; font-size: 12px; font-weight: 700;
+    font-family: var(--font); transition: all 0.2s; display: flex;
+    flex-direction: column; align-items: center; gap: 5px;
+  }
+  .share-action-btn .sab-icon { font-size: 20px; }
+  .share-action-btn.sab-ig { background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045); color: #fff; }
+  .share-action-btn.sab-x  { background: #000; color: #fff; border: 1px solid #222; }
+  .share-action-btn.sab-copy { background: #1a1a1a; color: #aaa; border: 1px solid #2a2a2a; }
+  .share-action-btn.sab-link { background: rgba(0,208,132,0.1); color: #00d084; border: 1px solid rgba(0,208,132,0.2); }
+
+  .share-tip {
+    font-size: 11px; color: #2a2a2a; text-align: center;
+    padding: 4px 0 20px; font-weight: 500; flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span>9:41</span>
+    <div class="statusbar-right">
+      <svg viewBox="0 0 24 24"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.56 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+      <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-title">
+      Global <span class="k">K</span>Chart
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="setTab(this)">일간</button>
+    <button class="tab" onclick="setTab(this)">주간</button>
+    <button class="tab" onclick="setTab(this)">월간</button>
+  </div>
+
+  <!-- Date bar -->
+  <div class="datebar">
+    <div class="datebar-left">
+      <span>☰</span>
+      <span>2025.01.16</span>
+    </div>
+    <div class="chart-guide">ⓘ 차트안내</div>
+  </div>
+
+  <!-- Fandom Leaderboard -->
+  <div class="fandom-board" id="fandomBoard">
+    <div class="fboard-header">
+      <div class="fboard-title">
+        <div class="live-dot"></div>
+        실시간 팬덤 응원 순위
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="fboard-update">1분 전 업데이트</span>
+        <button class="fboard-more-btn" id="fboardToggle" onclick="toggleFboard()">더보기 ∨</button>
+      </div>
+    </div>
+    <div class="fboard-rows" id="fboardRows">
+      <!-- injected by JS -->
+    </div>
+  </div>
+
+  <!-- Chart list -->
+  <div class="chart-list" id="chartList">
+    <!-- Rows injected by JS -->
+  </div>
+
+  <!-- Mini player -->
+  <div class="mini-player">
+    <div class="mp-progress"><div class="mp-progress-fill"></div></div>
+    <div class="mp-info">
+      <div class="mp-title">LIKE JENNIE</div>
+      <div class="mp-artist">제니 (JENNIE)</div>
+    </div>
+    <div class="mp-controls">
+      <button class="mp-btn">⏮</button>
+      <button class="mp-btn mp-play">▶</button>
+      <button class="mp-btn">⏭</button>
+      <button class="mp-btn">☰</button>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav">
+    <div class="nav-item active">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-label" style="color:#00d084">홈</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon">🎧</div>
+      <div class="nav-label">ForYou</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon">🔍</div>
+      <div class="nav-label">탐색</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon">📚</div>
+      <div class="nav-label">음악서랍</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon">•••</div>
+      <div class="nav-label">바로가기</div>
+    </div>
+  </div>
+
+  <!-- Floating button (응원 후 노출) -->
+  <div class="float-btn-label" id="floatLabel">응원 게시판</div>
+  <button class="float-btn" id="floatBtn" onclick="openBoard()">✏️</button>
+
+  <!-- Cheering overlay -->
+  <div class="cheer-overlay" id="cheerOverlay">
+    <div class="cheer-anim" id="cheerAnim">💖</div>
+    <div class="cheer-result-title" id="cheerTitle">응원 완료!</div>
+    <div class="cheer-result-sub" id="cheerSub">오늘 47개국 팬들과 함께 응원했어요</div>
+    <div class="cheer-result-card" id="cheerResultCard">
+      <div class="result-row">
+        <span class="result-label">현재 팬덤 순위</span>
+        <span class="result-value highlight" id="resultRank">2위</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">1위와 점수 차이</span>
+        <span class="result-value highlight">단 13,345점</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">연속 응원</span>
+        <span class="result-value green">🔥 23일째</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">오늘 남은 응원</span>
+        <span class="result-value">4회</span>
+      </div>
+    </div>
+    <div class="streak-bar">
+      <span class="streak-text">🔥 23일 연속 응원 중</span>
+      <span class="streak-sub">내일도 잊지 마세요!</span>
+    </div>
+    <div class="cheer-actions" style="margin-top:16px">
+      <button class="cheer-share-btn" onclick="openShareCard()">📤 공유 카드</button>
+      <button class="cheer-close-btn" onclick="closeCheer()">닫기</button>
+    </div>
+  </div>
+
+  <!-- 공유 카드 모달 -->
+  <div class="share-modal" id="shareModal">
+    <div class="share-modal-header">
+      <div class="share-modal-title">📤 공유 카드</div>
+      <button class="share-modal-close" onclick="closeShareCard()">✕</button>
+    </div>
+
+    <div class="share-card" id="shareCardEl">
+      <!-- Top bar -->
+      <div class="sc-top">
+        <span class="sc-logo"><span>Global</span> KChart</span>
+        <div class="sc-divider"></div>
+        <span class="sc-date" id="scDate">2025.01.16</span>
+        <span class="sc-badge" id="scBadge">🌍 글로벌픽</span>
+      </div>
+
+      <!-- Artist -->
+      <div class="sc-artist">
+        <div class="sc-artist-emoji" id="scArtistEmoji" style="background:#c0392b30;border-color:#c0392b40">🎤</div>
+        <div class="sc-artist-info">
+          <div class="sc-artist-name" id="scArtistName">제니 (JENNIE)</div>
+          <span class="sc-fandom-badge" id="scFandomBadge" style="background:#ff4d9e20;color:#ff4d9e">BLINK</span>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-size:10px;color:#444;font-weight:500;margin-bottom:3px">글로벌 순위</div>
+          <div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:-1.5px;line-height:1" id="scGlobalRank">#1</div>
+        </div>
+      </div>
+
+      <!-- 3국 ranks -->
+      <div class="sc-ranks">
+        <div class="sc-rank-pill">
+          <span class="sc-rank-flag">🇰🇷</span>
+          <div>
+            <div class="sc-rank-num" style="color:#00d084" id="scKR">1위</div>
+            <div class="sc-rank-label">Melon</div>
+          </div>
+        </div>
+        <div class="sc-rank-pill">
+          <span class="sc-rank-flag">🇨🇳</span>
+          <div>
+            <div class="sc-rank-num" style="color:#ffc107" id="scCN">2위</div>
+            <div class="sc-rank-label">TME</div>
+          </div>
+        </div>
+        <div class="sc-rank-pill">
+          <span class="sc-rank-flag">🇯🇵</span>
+          <div>
+            <div class="sc-rank-num" style="color:#ff6b6b" id="scJP">1위</div>
+            <div class="sc-rank-label">LINE MUSIC</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Heatmap -->
+      <div class="sc-heatmap-wrap">
+        <div class="sc-heatmap-title">WORLD FANDOM HEATMAP</div>
+        <canvas class="sc-heatmap-canvas" id="heatmapCanvas"></canvas>
+      </div>
+
+      <!-- Top countries -->
+      <div class="sc-countries" id="scCountries">
+        <!-- injected by JS -->
+      </div>
+
+      <!-- Footer -->
+      <div class="sc-footer">
+        <div class="sc-total">
+          <div class="sc-total-label">이번 주 팬덤 총 응원</div>
+          <div class="sc-total-score" id="scTotalScore">1,284,<span>390</span>점</div>
+        </div>
+        <div class="sc-watermark">melon × line × tme</div>
+      </div>
+    </div>
+
+    <!-- Share buttons -->
+    <div class="share-actions">
+      <button class="share-action-btn sab-ig">
+        <span class="sab-icon">📸</span>
+        <span>Instagram</span>
+      </button>
+      <button class="share-action-btn sab-x">
+        <span class="sab-icon">𝕏</span>
+        <span>X (Twitter)</span>
+      </button>
+      <button class="share-action-btn sab-copy" onclick="copyShareLink()">
+        <span class="sab-icon">🔗</span>
+        <span id="copyBtnLabel">링크 복사</span>
+      </button>
+    </div>
+    <div class="share-tip">이미지를 길게 눌러 저장하거나 공유할 수 있어요</div>
+  </div>
+
+  <!-- 응원 게시판 modal -->
+  <div class="board-modal" id="boardModal">
+    <div class="board-header">
+      <div>
+        <div class="board-title">✏️ 응원 게시판</div>
+        <div class="board-subtitle">응원 완료 후 작성 가능 · 팬덤명 + 국가 자동 표시</div>
+      </div>
+      <button class="board-close" onclick="closeBoard()">✕</button>
+    </div>
+    <div class="board-filters">
+      <button class="filter-chip active" onclick="setFilter(this)">전체</button>
+      <button class="filter-chip" onclick="setFilter(this)">한국</button>
+      <button class="filter-chip" onclick="setFilter(this)">일본</button>
+      <button class="filter-chip" onclick="setFilter(this)">기타</button>
+    </div>
+    <div class="board-messages" id="boardMessages">
+      <!-- Messages -->
+    </div>
+    <div class="board-input-bar" id="boardInputBar">
+      <input class="board-input" placeholder="응원 메시지를 남겨보세요..." id="boardInput" />
+      <button class="board-send" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ARTISTS = [
+  {
+    id: 1, rank: 1, prev: null, change: 'new', artistPick: true,
+    name: '제니 (JENNIE)', emoji: '🎤',
+    color: '#c0392b',
+    kr: 1, jp: 1, cn: 2,
+    badges: [
+      { label: '🔥 컴백', cls: 'comeback' },
+      { label: '🌍 글로벌픽', cls: 'global' },
+    ],
+    fandom: 'BLINK', fandomColor: '#ff4d9e',
+    songs: [
+      { title: 'LIKE JENNIE', meta: '2025 · 컴백 타이틀', emoji: '🎵', streams: '4.2M' },
+      { title: 'You & Me', meta: '2024 · 전작', emoji: '🎵', streams: '8.1M' },
+      { title: 'SOLO', meta: '2018 · 대표곡', emoji: '🎵', streams: '22M' },
+    ],
+    videos: [
+      { title: 'LIKE JENNIE — MV', sub: '유튜브 · 조회 12.4M · 3일 전', emoji: '🎤', tag: '최신 MV' },
+      { title: '제니 글로벌 팬미팅 하이라이트', sub: '멜론TV · 조회 880K · 1주 전', emoji: '📹', tag: '현장' },
+    ],
+    insights: [
+      { icon: '🇨🇳', label: 'TME 인사이트', text: '이번 주 <strong>중국에서 2위</strong> — 지난주 대비 ▲1 상승. WeChat 공유 수 전주 대비 340% 폭증' },
+      { icon: '🌍', label: '3국 픽', text: '<strong>KR·JP 동시 1위</strong>. CN은 CORTIS에 밀려 2위. 3국 팬덤 모두 이번 주 최대 응원 집중' },
+    ],
+    fandomRanks: [
+      { rank: 1, name: 'BLINK', score: '1,284,390', pct: 92 },
+      { rank: 2, name: 'MY', score: '1,271,045', pct: 86 },
+      { rank: 3, name: 'DIVE', score: '892,110', pct: 64 },
+    ],
+    diff: '1위 BLINK — MY와 차이: 단 13,345점',
+  },
+  {
+    id: 2, rank: 2, prev: 2, change: 'same',
+    name: 'IVE (아이브)', emoji: '💫',
+    color: '#1a237e',
+    kr: 2, jp: 2, cn: 3,
+    badges: [
+      { label: '💎 4주연속1위', cls: 'streak' },
+    ],
+    fandom: 'DIVE', fandomColor: '#00d4ff',
+    songs: [
+      { title: 'REBEL HEART', meta: '2025 · 타이틀', emoji: '🎵', streams: '3.1M' },
+      { title: 'Accendio', meta: '2024', emoji: '🎵', streams: '6.7M' },
+      { title: 'LOVE DIVE', meta: '2022 · 대표곡', emoji: '🎵', streams: '18M' },
+    ],
+    videos: [
+      { title: 'REBEL HEART — MV', sub: '유튜브 · 조회 8.9M · 1주 전', emoji: '💫', tag: '최신 MV' },
+      { title: 'IVE SHOW WHAT I HAVE 직캠', sub: '멜론TV · 조회 420K · 2주 전', emoji: '📹', tag: '직캠' },
+    ],
+    insights: [
+      { icon: '💎', label: '연속 1위', text: 'Melon 기준 <strong>4주 연속 1위</strong>. 국내 팬덤 응원 집결력 1위 — 결집력 뱃지 보유 아티스트' },
+      { icon: '🇯🇵', label: 'LINE MUSIC', text: 'JP <strong>2위</strong> 유지. 일본 팬 비중 전체 글로벌 팬덤 대비 28% — 가장 높은 해외 팬 비율' },
+    ],
+    fandomRanks: [
+      { rank: 1, name: 'DIVE', score: '998,240', pct: 88 },
+      { rank: 2, name: 'BLINK', score: '781,100', pct: 70 },
+      { rank: 3, name: 'MY', score: '620,500', pct: 55 },
+    ],
+    diff: '1위 DIVE — BLINK와 차이: 217,140점',
+  },
+  {
+    id: 3, rank: 3, prev: 6, change: 'up',
+    name: 'CORTIS (코르티스)', emoji: '🎸',
+    color: '#2d3a2e',
+    kr: 3, jp: 5, cn: 1,
+    badges: [
+      { label: '⬆ 최다상승', cls: 'rise' },
+      { label: '🇨🇳 TME 1위', cls: 'new-entry' },
+    ],
+    fandom: null, fandomColor: '#a0ff80',
+    songs: [
+      { title: '소나기', meta: '2025 · 타이틀', emoji: '🎵', streams: '1.8M' },
+      { title: '별의 목소리', meta: '2024', emoji: '🎵', streams: '3.4M' },
+    ],
+    videos: [
+      { title: '소나기 — Official MV', sub: '유튜브 · 조회 5.6M · 5일 전', emoji: '🎸', tag: '최신 MV' },
+    ],
+    insights: [
+      { icon: '🇨🇳', label: 'TME 1위 돌파', text: '이번 주 <strong>중국 TME 1위</strong> 진입. 중화권 숏폼 플랫폼에서 바이럴 급증 — 신흥 글로벌 아티스트' },
+      { icon: '⬆', label: '최다 상승', text: '일간 기준 <strong>3→3위 유지 + 주간 6위→3위</strong>. 3국 중 CN 단독 1위 — 이번 주 가장 이색적인 국가별 차이' },
+    ],
+    fandomRanks: [
+      { rank: 1, name: '팬덤', score: '432,000', pct: 72 },
+    ],
+    diff: null,
+  },
+  {
+    id: 4, rank: 4, prev: 2, change: 'down', artistPick: true,
+    name: 'aespa', emoji: '🤖',
+    color: '#1a1a2e',
+    kr: 4, jp: 3, cn: 4,
+    badges: [
+      { label: '🔥 컴백', cls: 'comeback' },
+    ],
+    fandom: 'MY', fandomColor: '#00d084',
+    songs: [
+      { title: 'Whiplash', meta: '2025 · 컴백 타이틀', emoji: '🎵', streams: '2.9M' },
+      { title: 'Supernova', meta: '2024', emoji: '🎵', streams: '11M' },
+      { title: 'Next Level', meta: '2021 · 대표곡', emoji: '🎵', streams: '30M' },
+    ],
+    videos: [
+      { title: 'Whiplash — MV', sub: '유튜브 · 조회 9.2M · 4일 전', emoji: '🤖', tag: '최신 MV' },
+      { title: 'aespa 컴백 쇼케이스 풀버전', sub: '멜론TV · 조회 1.1M · 1주 전', emoji: '📹', tag: '쇼케이스' },
+    ],
+    insights: [
+      { icon: '🌏', label: '글로벌 현황', text: 'MY 팬덤 <strong>실시간 응원 2위</strong>. JP에서 3위로 가장 고른 글로벌 분포 — 3국 편차 최소 아티스트' },
+      { icon: '🔥', label: '컴백 효과', text: '컴백 이후 일간 스트리밍 <strong>+182%</strong>. 3국 동반 상승 중 — 단 4일 만에 2위→4위로 조정' },
+    ],
+    fandomRanks: [
+      { rank: 1, name: 'MY', score: '1,271,045', pct: 90 },
+      { rank: 2, name: 'BLINK', score: '988,210', pct: 75 },
+      { rank: 3, name: 'DIVE', score: '720,500', pct: 58 },
+    ],
+    diff: '1위 MY — BLINK와 차이: 282,835점',
+  },
+  {
+    id: 5, rank: 5, prev: 7, change: 'up',
+    name: 'TOMORROW X TOGETHER', emoji: '🌙',
+    color: '#0d1b2a',
+    kr: 5, jp: 4, cn: 5,
+    badges: [
+      { label: '🆕 신규진입', cls: 'new-entry' },
+    ],
+    fandom: 'MOA', fandomColor: '#7c3aed',
+    songs: [
+      { title: 'Chasing That Feeling', meta: '2025 · 신보', emoji: '🎵', streams: '1.4M' },
+      { title: 'Back Door', meta: '2020', emoji: '🎵', streams: '9.8M' },
+    ],
+    videos: [
+      { title: 'Chasing That Feeling — MV', sub: '유튜브 · 조회 4.1M · 1주 전', emoji: '🌙', tag: '최신 MV' },
+    ],
+    insights: [
+      { icon: '🇯🇵', label: 'JP 강세', text: 'LINE MUSIC <strong>4위</strong>. 일본 MOA 응원 비율 JP 전체 팬덤 중 2위 — JP 시장 성장 중' },
+    ],
+    fandomRanks: [
+      { rank: 1, name: 'MOA', score: '542,000', pct: 68 },
+      { rank: 2, name: 'ARMY', score: '480,000', pct: 60 },
+    ],
+    diff: '1위 MOA — ARMY와 차이: 62,000점',
+  },
+];
+
+// Global fandom leaderboard data
+const FANDOM_BOARD = [
+  { rank: 1, change: 'same', name: 'BLINK', artist: '제니 (JENNIE)', color: '#ff4d9e', avatar: 'B', score: '1,284,390', pct: 100 },
+  { rank: 2, change: 'up',   name: 'MY',    artist: 'aespa',         color: '#00d084', avatar: 'M', score: '1,271,045', pct: 99 },
+  { rank: 3, change: 'same', name: 'DIVE',  artist: 'IVE (아이브)',   color: '#00d4ff', avatar: 'D', score: '998,240',   pct: 78 },
+  { rank: 4, change: 'up',   name: 'MOA',   artist: 'TOMORROW X TOGETHER', color: '#7c3aed', avatar: 'M', score: '542,000', pct: 42 },
+  { rank: 5, change: 'same', name: 'ARMY',  artist: 'BTS',           color: '#a0522d', avatar: 'A', score: '480,000',   pct: 37 },
+];
+
+let expandedId = null;
+let cheeredIds = new Set();
+let boardUnlocked = false;
+let fboardExpanded = false;
+let cardTabs = {}; // id -> active tab
+
+let boardMessages = [
+  { fandom: 'BLINK', fandomColor: '#ff4d9e', country: 'KR', time: '방금', text: '오늘도 응원 완료!! 제니 언니 사랑해 💗', avatar: 'B' },
+  { fandom: 'MY', fandomColor: '#00d084', country: 'JP', time: '2분전', text: '今日も応援したよ！aespa 화이팅 💚', avatar: 'M' },
+  { fandom: 'BLINK', fandomColor: '#ff4d9e', country: 'US', time: '5분전', text: 'Cheering from NYC!! 23 days streak 🔥', avatar: 'B' },
+  { fandom: 'DIVE', fandomColor: '#00d4ff', country: 'TH', time: '8분전', text: 'IVE Thailand always here!! 💙', avatar: 'D' },
+  { fandom: 'MOA', fandomColor: '#7c3aed', country: 'CN', time: '11분전', text: 'TXT 加油！！每天都来应援 🌙', avatar: 'M' },
+  { fandom: 'MY', fandomColor: '#00d084', country: 'KR', time: '14분전', text: 'aespa 이번 주도 최고야 🤖✨', avatar: 'M' },
+];
+
+let currentCheerArtist = null;
+
+function renderChart() {
+  const list = document.getElementById('chartList');
+  list.innerHTML = ARTISTS.map(a => renderRow(a)).join('');
+}
+
+function renderRow(a) {
+  const isExpanded = expandedId === a.id;
+  const isCheered = cheeredIds.has(a.id);
+
+  const changeHtml = a.change === 'new'
+    ? `<div class="rank-change new">NEW</div>`
+    : a.change === 'up'
+    ? `<div class="rank-change up">▲${Math.abs(a.prev - a.rank)}</div>`
+    : a.change === 'down'
+    ? `<div class="rank-change down">▼${Math.abs(a.prev - a.rank)}</div>`
+    : `<div class="rank-change same">—</div>`;
+
+  const badgesHtml = a.badges.map(b =>
+    `<span class="badge ${b.cls}">${b.label}</span>`
+  ).join('');
+
+  const expandedHtml = isExpanded ? renderCard(a) : '';
+
+  return `
+    <div class="chart-row" id="row-${a.id}">
+      <div class="chart-row-main" onclick="toggleExpand(${a.id})">
+        <div class="rank-block">
+          <div class="rank-num">${a.rank}</div>
+          ${changeHtml}
+        </div>
+        ${a.artistPick
+          ? `<div class="artist-pick-ring"><div class="photo-placeholder">${a.emoji}</div></div>`
+          : `<div class="photo-placeholder" style="background:${a.color}20;border-color:${a.color}40;">${a.emoji}</div>`
+        }
+        <div class="artist-info">
+          <div class="artist-name">${a.name}</div>
+          <div class="country-pills">
+            <span class="cpill kr"><span class="flag">🇰🇷</span><span class="crank">${a.kr}위</span></span>
+            <span class="cpill jp"><span class="flag">🇯🇵</span><span class="crank">${a.jp}위</span></span>
+            <span class="cpill cn"><span class="flag">🇨🇳</span><span class="crank">${a.cn}위</span></span>
+          </div>
+          <div class="badges">${badgesHtml}</div>
+        </div>
+        <div class="row-right" onclick="event.stopPropagation()">
+          <button class="cheer-btn ${isCheered ? 'cheered' : ''}" onclick="doCheer(${a.id}, event)">
+            ${isCheered ? '♥ 응원완료' : '♡ 응원'}
+          </button>
+          <button class="expand-btn">${isExpanded ? '∧' : '∨'}</button>
+        </div>
+      </div>
+      ${expandedHtml}
+    </div>
+  `;
+}
+
+function renderCard(a) {
+  const fandomBadge = a.fandom
+    ? `<span class="fandom-badge" style="background:${a.fandomColor}20;color:${a.fandomColor};border-color:${a.fandomColor}40">${a.fandom}</span>`
+    : '';
+
+  const fanBarsHtml = a.fandomRanks.map(f => `
+    <div class="fandom-row">
+      <span class="fandom-rank-num">${f.rank}</span>
+      <span class="fandom-name-label">${f.name}</span>
+      <div class="fandom-bar-wrap"><div class="fandom-bar-fill" style="width:${f.pct}%;background:${a.fandomColor || '#00d084'}"></div></div>
+      <span class="fandom-score">${f.score}점</span>
+    </div>
+  `).join('');
+
+  const diffHtml = a.diff ? `<div class="cheer-diff">🏆 ${a.diff}</div>` : '';
+  const isCheered = cheeredIds.has(a.id);
+  const activeTab = cardTabs[a.id] || 'cheer';
+
+  // Songs tab
+  const songsHtml = (a.songs || []).map((s, i) => `
+    <div class="card-song-row">
+      <span class="csong-num">${i+1}</span>
+      <div class="csong-thumb">${s.emoji}</div>
+      <div class="csong-info">
+        <div class="csong-title">${s.title}</div>
+        <div class="csong-meta">${s.meta} · ${s.streams} 스트리밍</div>
+      </div>
+      <button class="csong-play">▶</button>
+    </div>
+  `).join('');
+
+  // Videos tab
+  const videosHtml = (a.videos || []).map(v => `
+    <div class="card-video-item">
+      <div class="video-thumb">
+        <span>${v.emoji}</span>
+        <div class="video-play-overlay"><div class="video-play-icon">▶</div></div>
+      </div>
+      <div class="video-meta">
+        <div class="video-title">${v.title}</div>
+        <div class="video-sub">
+          <span>${v.sub}</span>
+          <span style="color:#00d084;font-weight:700">${v.tag}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // Insight tab
+  const insightHtml = (a.insights || []).map(ins => `
+    <div class="insight-chip">
+      <div class="insight-icon">${ins.icon}</div>
+      <div class="insight-body">
+        <div class="insight-label">${ins.label}</div>
+        <div class="insight-text">${ins.text}</div>
+      </div>
+    </div>
+  `).join('');
+
+  return `
+    <div class="artist-card" id="card-${a.id}">
+      <!-- Card header -->
+      <div class="card-top">
+        <div class="card-artist-photo" style="background:${a.color}30;border-color:${a.color}40">
+          <span style="font-size:32px">${a.emoji}</span>
+        </div>
+        <div class="card-artist-info">
+          <div class="card-artist-name">${a.name}</div>
+          ${fandomBadge}
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            ${a.badges.map(b=>`<span class="badge ${b.cls}" style="font-size:10px">${b.label}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- Country ranks -->
+      <div class="country-ranks-card">
+        <div class="crank-item">
+          <div class="crank-platform">🇰🇷</div>
+          <div class="crank-num" style="color:#00d084">${a.kr}위</div>
+          <div class="crank-platform-label">Melon</div>
+        </div>
+        <div class="crank-item">
+          <div class="crank-platform">🇨🇳</div>
+          <div class="crank-num" style="color:#ffc107">${a.cn}위</div>
+          <div class="crank-platform-label">TME</div>
+        </div>
+        <div class="crank-item">
+          <div class="crank-platform">🇯🇵</div>
+          <div class="crank-num" style="color:#ff6b6b">${a.jp}위</div>
+          <div class="crank-platform-label">LINE MUSIC</div>
+        </div>
+      </div>
+
+      <!-- Content tabs -->
+      <div class="card-tabs">
+        <button class="card-tab ${activeTab==='cheer'?'active':''}" onclick="setCardTab(${a.id},'cheer')">♥ 응원</button>
+        <button class="card-tab ${activeTab==='songs'?'active':''}" onclick="setCardTab(${a.id},'songs')">🎵 곡</button>
+        <button class="card-tab ${activeTab==='videos'?'active':''}" onclick="setCardTab(${a.id},'videos')">▶ 영상</button>
+        <button class="card-tab ${activeTab==='insight'?'active':''}" onclick="setCardTab(${a.id},'insight')">🌍 인사이트</button>
+      </div>
+
+      <!-- Cheer tab -->
+      <div class="card-content-panel ${activeTab==='cheer'?'active':''}">
+        <div class="cheer-section">
+          <div class="cheer-label">팬덤 응원 현황 (이번 주)</div>
+          <div class="cheer-fandom-bar">${fanBarsHtml}</div>
+          ${diffHtml}
+          <button class="big-cheer-btn ${isCheered ? 'done' : ''}" onclick="doCheer(${a.id})">
+            ${isCheered ? '✔ 응원 완료' : '♥ 응원하기'}
+          </button>
+          <div class="cheer-sub">${isCheered ? '오늘 남은 응원 4회 · 연속 23일째 🔥' : '1시간 1회 · 로그인 필수 · 응원 후 게시판 이용 가능'}</div>
+        </div>
+      </div>
+
+      <!-- Songs tab -->
+      <div class="card-content-panel ${activeTab==='songs'?'active':''}">
+        <div class="card-songs">${songsHtml}</div>
+      </div>
+
+      <!-- Videos tab -->
+      <div class="card-content-panel ${activeTab==='videos'?'active':''}">
+        <div class="card-videos">${videosHtml || '<div style="padding:20px 16px;text-align:center;color:#333;font-size:13px">등록된 영상이 없습니다</div>'}</div>
+      </div>
+
+      <!-- Insight tab -->
+      <div class="card-content-panel ${activeTab==='insight'?'active':''}">
+        <div class="card-insight">${insightHtml || '<div style="padding:20px 16px;text-align:center;color:#333;font-size:13px">인사이트 데이터 준비 중</div>'}</div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleExpand(id) {
+  expandedId = expandedId === id ? null : id;
+  renderChart();
+  if (expandedId !== null) {
+    setTimeout(() => {
+      const card = document.getElementById(`card-${expandedId}`);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+  }
+}
+
+function doCheer(id, e) {
+  if (e) e.stopPropagation();
+  if (cheeredIds.has(id)) return;
+
+  cheeredIds.add(id);
+  boardUnlocked = true;
+  currentCheerArtist = ARTISTS.find(a => a.id === id);
+
+  // Show overlay
+  const overlay = document.getElementById('cheerOverlay');
+  overlay.classList.add('show');
+
+  // Update floating btn
+  document.getElementById('floatBtn').classList.add('show');
+  document.getElementById('floatLabel').classList.add('show');
+
+  // Rerender row for button state
+  renderChart();
+  if (expandedId === id) {
+    // keep expanded
+  }
+}
+
+function closeCheer() {
+  document.getElementById('cheerOverlay').classList.remove('show');
+}
+
+function setTab(el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function openBoard() {
+  document.getElementById('boardModal').classList.add('open');
+  renderBoardMessages();
+}
+function closeBoard() {
+  document.getElementById('boardModal').classList.remove('open');
+}
+
+function renderBoardMessages() {
+  const container = document.getElementById('boardMessages');
+  container.innerHTML = boardMessages.map(m => `
+    <div class="msg-row">
+      <div class="msg-avatar" style="background:${m.fandomColor}">${m.avatar}</div>
+      <div class="msg-body">
+        <div class="msg-top">
+          <span class="msg-fandom" style="background:${m.fandomColor}20;color:${m.fandomColor}">${m.fandom}</span>
+          <span class="msg-country">${m.country}</span>
+          <span class="msg-time">${m.time}</span>
+        </div>
+        <div class="msg-text">${m.text}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function sendMessage() {
+  const input = document.getElementById('boardInput');
+  const text = input.value.trim();
+  if (!text) return;
+  boardMessages.unshift({ fandom: 'BLINK', fandomColor: '#ff4d9e', country: 'KR', time: '방금', text, avatar: 'B' });
+  input.value = '';
+  renderBoardMessages();
+}
+
+function setFilter(el) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function setCardTab(id, tab) {
+  cardTabs[id] = tab;
+  // re-render just the card (don't collapse)
+  const cardEl = document.getElementById(`card-${id}`);
+  if (cardEl) {
+    const a = ARTISTS.find(x => x.id === id);
+    cardEl.outerHTML = renderCard(a);
+  }
+}
+
+// Fandom board
+function renderFboard() {
+  const rows = fboardExpanded ? FANDOM_BOARD : FANDOM_BOARD.slice(0, 3);
+  const btn = document.getElementById('fboardToggle');
+  if (btn) btn.textContent = fboardExpanded ? '접기 ∧' : '더보기 ∨';
+
+  document.getElementById('fboardRows').innerHTML = rows.map(f => {
+    const rankCls = f.rank === 1 ? 'r1' : f.rank === 2 ? 'r2' : f.rank === 3 ? 'r3' : 'rx';
+    const changeTxt = f.change === 'up' ? '▲' : '—';
+    const changeCls = f.change === 'up' ? 'up' : 'same';
+    return `
+      <div class="fboard-row" onclick="focusArtistByFandom('${f.name}')">
+        <span class="fboard-rank ${rankCls}">${f.rank}</span>
+        <div class="fboard-avatar" style="background:${f.color}">${f.avatar}</div>
+        <div class="fboard-info">
+          <div class="fboard-name">
+            <span style="color:${f.color}">${f.name}</span>
+            <span style="font-size:10px;color:#444;font-weight:500">· ${f.artist}</span>
+          </div>
+          <div class="fboard-artist">${f.score}점</div>
+        </div>
+        <div class="fboard-bar-wrap">
+          <div class="fboard-bar-bg"><div class="fboard-bar-fill" style="width:${f.pct}%;background:${f.color}80"></div></div>
+        </div>
+        <span class="fboard-change ${changeCls}">${changeTxt}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleFboard() {
+  fboardExpanded = !fboardExpanded;
+  renderFboard();
+}
+
+function focusArtistByFandom(fandomName) {
+  const artist = ARTISTS.find(a => a.fandom === fandomName);
+  if (artist) {
+    expandedId = artist.id;
+    cardTabs[artist.id] = 'cheer';
+    renderChart();
+    setTimeout(() => {
+      const card = document.getElementById(`card-${artist.id}`);
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 80);
+  }
+}
+
+// Init
+renderChart();
+renderFboard();
+
+// ─── Share Card & Heatmap ───
+
+const COUNTRY_DATA = {
+  1: [
+    { flag:'🇰🇷', name:'한국',       score:'428,100', pct:100, color:'#ff4d9e', lat:37.5,  lon:127.0 },
+    { flag:'🇺🇸', name:'미국',       score:'214,050', pct:50,  color:'#ff4d9e', lat:38.0,  lon:-97.0 },
+    { flag:'🇯🇵', name:'일본',       score:'192,650', pct:45,  color:'#ff6dae', lat:36.2,  lon:138.3 },
+    { flag:'🇹🇭', name:'태국',       score:'128,430', pct:30,  color:'#ff8dce', lat:15.9,  lon:100.9 },
+    { flag:'🇮🇩', name:'인도네시아', score:'96,320',  pct:22,  color:'#ff9dde', lat:-0.8,  lon:113.9 },
+    { flag:'🇨🇳', name:'중국',       score:'85,700',  pct:20,  color:'#ffadee', lat:35.9,  lon:104.2 },
+  ],
+  2: [
+    { flag:'🇰🇷', name:'한국',       score:'399,200', pct:100, color:'#00d4ff', lat:37.5,  lon:127.0 },
+    { flag:'🇯🇵', name:'일본',       score:'249,560', pct:62,  color:'#00c4ef', lat:36.2,  lon:138.3 },
+    { flag:'🇺🇸', name:'미국',       score:'149,736', pct:37,  color:'#00a4cf', lat:38.0,  lon:-97.0 },
+    { flag:'🇲🇾', name:'말레이시아', score:'99,824',  pct:25,  color:'#0094bf', lat:4.2,   lon:108.0 },
+    { flag:'🇵🇭', name:'필리핀',     score:'79,859',  pct:20,  color:'#0080af', lat:12.9,  lon:122.0 },
+  ],
+  3: [
+    { flag:'🇨🇳', name:'중국',       score:'216,000', pct:100, color:'#a0ff80', lat:35.9,  lon:104.2 },
+    { flag:'🇰🇷', name:'한국',       score:'108,000', pct:50,  color:'#80ef60', lat:37.5,  lon:127.0 },
+    { flag:'🇹🇼', name:'대만',       score:'86,400',  pct:40,  color:'#70df50', lat:23.7,  lon:121.0 },
+    { flag:'🇸🇬', name:'싱가포르',   score:'43,200',  pct:20,  color:'#50cf30', lat:1.3,   lon:103.8 },
+  ],
+  4: [
+    { flag:'🇰🇷', name:'한국',       score:'381,300', pct:100, color:'#00d084', lat:37.5,  lon:127.0 },
+    { flag:'🇺🇸', name:'미국',       score:'254,200', pct:66,  color:'#00c074', lat:38.0,  lon:-97.0 },
+    { flag:'🇯🇵', name:'일본',       score:'190,650', pct:50,  color:'#00b064', lat:36.2,  lon:138.3 },
+    { flag:'🇧🇷', name:'브라질',     score:'127,100', pct:33,  color:'#00a054', lat:-14.2, lon:-51.9 },
+    { flag:'🇬🇧', name:'영국',       score:'95,325',  pct:25,  color:'#009044', lat:55.4,  lon:-3.4  },
+  ],
+  5: [
+    { flag:'🇰🇷', name:'한국',       score:'216,800', pct:100, color:'#7c3aed', lat:37.5,  lon:127.0 },
+    { flag:'🇯🇵', name:'일본',       score:'162,600', pct:75,  color:'#6c2add', lat:36.2,  lon:138.3 },
+    { flag:'🇺🇸', name:'미국',       score:'108,400', pct:50,  color:'#5c1acd', lat:38.0,  lon:-97.0 },
+    { flag:'🇲🇽', name:'멕시코',     score:'54,200',  pct:25,  color:'#4c0abd', lat:23.6,  lon:-102.5},
+  ],
+};
+
+function openShareCard() {
+  closeCheer();
+  const a = currentCheerArtist || ARTISTS[0];
+
+  document.getElementById('scArtistName').textContent = a.name;
+  const emojiEl = document.getElementById('scArtistEmoji');
+  emojiEl.textContent = a.emoji;
+  emojiEl.style.background = a.color + '30';
+  emojiEl.style.borderColor = a.color + '40';
+  document.getElementById('scGlobalRank').textContent = '#' + a.rank;
+
+  const fb = document.getElementById('scFandomBadge');
+  if (a.fandom) {
+    fb.textContent = a.fandom;
+    fb.style.background = a.fandomColor + '20';
+    fb.style.color = a.fandomColor;
+    fb.style.display = 'inline-block';
+  } else { fb.style.display = 'none'; }
+
+  document.getElementById('scKR').textContent = a.kr + '위';
+  document.getElementById('scCN').textContent = a.cn + '위';
+  document.getElementById('scJP').textContent = a.jp + '위';
+
+  const scoreStr = a.fandomRanks[0]?.score || '1,000,000';
+  const parts = scoreStr.split(',');
+  document.getElementById('scTotalScore').innerHTML =
+    parts.slice(0,-1).join(',') + ',<span>' + parts[parts.length-1] + '</span>점';
+
+  const badge = a.badges[0];
+  document.getElementById('scBadge').textContent = badge ? badge.label : '🌍 글로벌';
+
+  const countries = COUNTRY_DATA[a.id] || [];
+  const maxPct = countries[0]?.pct || 100;
+  document.getElementById('scCountries').innerHTML = countries.slice(0,4).map(c => `
+    <div class="sc-country">
+      <span class="sc-country-flag">${c.flag}</span>
+      <div class="sc-country-info">
+        <div class="sc-country-name">${c.name}</div>
+        <div class="sc-country-score">${c.score}점</div>
+        <div class="sc-country-bar"><div class="sc-country-bar-fill" style="width:${Math.round((c.pct/maxPct)*100)}%;background:${c.color}"></div></div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('shareModal').classList.add('open');
+  setTimeout(() => drawHeatmap(a.id), 60);
+}
+
+function closeShareCard() {
+  document.getElementById('shareModal').classList.remove('open');
+}
+
+function drawHeatmap(artistId) {
+  const canvas = document.getElementById('heatmapCanvas');
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  const W = wrap.clientWidth || 320;
+  const H = 130;
+  const s = window.devicePixelRatio || 2;
+  canvas.width  = W * s;
+  canvas.height = H * s;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+
+  // Clear
+  ctx.clearRect(0, 0, W*s, H*s);
+
+  // Continent fill
+  ctx.save();
+  ctx.globalAlpha = 0.10;
+  ctx.fillStyle = '#ffffff';
+  const continents = [
+    [[0.05,0.07],[0.27,0.05],[0.31,0.14],[0.28,0.34],[0.18,0.47],[0.11,0.52],[0.06,0.38],[0.02,0.22]],
+    [[0.18,0.50],[0.30,0.48],[0.36,0.60],[0.32,0.82],[0.22,0.88],[0.15,0.74],[0.14,0.58]],
+    [[0.42,0.07],[0.57,0.06],[0.58,0.20],[0.52,0.28],[0.44,0.24],[0.40,0.14]],
+    [[0.45,0.27],[0.59,0.25],[0.62,0.46],[0.56,0.72],[0.46,0.78],[0.40,0.66],[0.38,0.45]],
+    [[0.56,0.06],[0.96,0.04],[0.98,0.28],[0.88,0.44],[0.74,0.52],[0.60,0.46],[0.58,0.30],[0.54,0.18]],
+    [[0.73,0.58],[0.88,0.56],[0.90,0.72],[0.80,0.78],[0.70,0.74],[0.68,0.62]],
+  ];
+  continents.forEach(pts => {
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0]*W*s, pts[0][1]*H*s);
+    pts.slice(1).forEach(([x,y]) => ctx.lineTo(x*W*s, y*H*s));
+    ctx.closePath(); ctx.fill();
+  });
+  ctx.restore();
+
+  // Lat/lon → canvas XY
+  function project(lat, lon) {
+    return [
+      ((lon + 180) / 360) * W * s,
+      ((90 - lat)  / 180) * H * s,
+    ];
+  }
+
+  const countries = COUNTRY_DATA[artistId] || [];
+  const maxPct = Math.max(...countries.map(c => c.pct), 1);
+
+  // Glow blobs
+  countries.forEach(c => {
+    const [x, y] = project(c.lat, c.lon);
+    const r = (c.pct / maxPct) * 28 * s + 6 * s;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0,   c.color + 'bb');
+    g.addColorStop(0.5, c.color + '44');
+    g.addColorStop(1,   c.color + '00');
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.fillStyle = g;
+    ctx.fill();
+  });
+
+  // Dot markers
+  countries.forEach((c, i) => {
+    const [x, y] = project(c.lat, c.lon);
+    const r = Math.max((c.pct / maxPct) * 5 * s, 2.5 * s);
+    if (i < 3) {
+      ctx.beginPath();
+      ctx.arc(x, y, r + 2.5*s, 0, Math.PI*2);
+      ctx.strokeStyle = c.color + '70';
+      ctx.lineWidth = 1.2 * s;
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.fillStyle = c.color;
+    ctx.fill();
+  });
+
+  // Rank labels for top 2
+  countries.slice(0, 2).forEach((c, i) => {
+    const [x, y] = project(c.lat, c.lon);
+    ctx.font = `bold ${9*s}px sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${i+1}위`, x, y - 8*s);
+  });
+}
+
+function copyShareLinkAction() {
+  const btn = document.getElementById('copyBtnLabel');
+  if (btn) { btn.textContent = '복사 완료!'; setTimeout(() => btn.textContent = '링크 복사', 2000); }
+}
+
+// Wire copy button
+document.addEventListener('click', e => {
+  if (e.target.closest('.sab-copy')) copyShareLinkAction();
+});
+</script>
+</body>
+</html>
