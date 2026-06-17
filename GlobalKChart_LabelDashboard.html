@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global K Chart — 레이블 파트너 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<style>
+:root {
+  --font: 'Pretendard Variable', 'Pretendard', -apple-system, sans-serif;
+  --bg: #08080f;
+  --surface: #0f0f1a;
+  --card: #131320;
+  --card2: #181826;
+  --border: #1e1e30;
+  --accent: #00d4aa;
+  --accent2: #ff4d6d;
+  --accent3: #ffb800;
+  --accent4: #7c3aed;
+  --text: #ffffff;
+  --text2: #8888a8;
+  --text3: #3a3a58;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; word-break: keep-all; }
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  min-height: 100vh; -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Top bar ─── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 60px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-logo { display: flex; align-items: center; gap: 10px; }
+.logo-text { font-size: 17px; font-weight: 900; letter-spacing: -0.5px; }
+.logo-text span { color: var(--accent); }
+.logo-badge {
+  background: rgba(0,212,170,0.12); border: 1px solid rgba(0,212,170,0.25);
+  color: var(--accent); font-size: 10px; font-weight: 700;
+  padding: 3px 9px; border-radius: 20px; letter-spacing: 0.2px;
+}
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.topbar-label { font-size: 12px; color: var(--text2); font-weight: 500; }
+.label-name { font-size: 13px; font-weight: 700; color: var(--text); }
+.avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, #ff4d6d, #7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: #fff; cursor: pointer;
+}
+
+/* ─── Layout ─── */
+.layout { display: flex; height: calc(100vh - 100px); }
+.footer-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; }
+
+/* Sidebar */
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--surface); border-right: 1px solid var(--border);
+  overflow-y: auto; padding: 20px 0;
+}
+.sidebar::-webkit-scrollbar { display: none; }
+.sidebar-section { margin-bottom: 24px; }
+.sidebar-label {
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  letter-spacing: 0.8px; padding: 0 20px 8px; text-transform: uppercase;
+}
+.sidebar-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 20px; cursor: pointer; transition: all 0.15s;
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  border-left: 2px solid transparent;
+}
+.sidebar-item:hover { background: rgba(255,255,255,0.03); color: var(--text); }
+.sidebar-item.active {
+  background: rgba(0,212,170,0.06); color: var(--accent);
+  border-left-color: var(--accent);
+}
+.sidebar-item .si-icon { font-size: 15px; width: 20px; text-align: center; }
+.sidebar-dot { width: 6px; height: 6px; border-radius: 50%; margin-left: auto; }
+
+/* Artist selector in sidebar */
+.artist-list { padding: 0 12px; }
+.artist-btn {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 10px; border-radius: 10px; cursor: pointer;
+  transition: all 0.15s; margin-bottom: 4px; border: none;
+  background: transparent; width: 100%; text-align: left;
+  font-family: var(--font);
+}
+.artist-btn:hover { background: rgba(255,255,255,0.04); }
+.artist-btn.active { background: rgba(0,212,170,0.08); }
+.artist-emoji { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.artist-btn-info { flex: 1; min-width: 0; }
+.artist-btn-name { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.artist-btn-fandom { font-size: 10px; color: var(--text2); font-weight: 500; margin-top: 1px; }
+.artist-btn-rank { font-size: 11px; font-weight: 800; color: var(--text2); flex-shrink: 0; }
+.artist-btn.active .artist-btn-rank { color: var(--accent); }
+
+/* ─── Main content ─── */
+.main {
+  flex: 1; overflow-y: auto; padding: 28px 28px 60px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+.main::-webkit-scrollbar { width: 4px; }
+.main::-webkit-scrollbar-track { background: transparent; }
+.main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Page header */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; }
+.page-title { font-size: 22px; font-weight: 900; letter-spacing: -0.6px; }
+.page-title span { color: var(--accent); }
+.page-sub { font-size: 13px; color: var(--text2); margin-top: 4px; font-weight: 500; }
+.header-controls { display: flex; gap: 8px; align-items: center; }
+.period-btn {
+  padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700;
+  border: 1px solid var(--border); background: transparent; color: var(--text2);
+  cursor: pointer; font-family: var(--font); transition: all 0.15s;
+}
+.period-btn.active { background: var(--accent); border-color: var(--accent); color: #000; }
+.export-btn {
+  padding: 7px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;
+  border: 1px solid rgba(0,212,170,0.3); background: rgba(0,212,170,0.08);
+  color: var(--accent); cursor: pointer; font-family: var(--font);
+  display: flex; align-items: center; gap: 5px;
+}
+
+/* ─── KPI Cards ─── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kpi-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 18px 20px; position: relative; overflow: hidden;
+}
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  border-radius: 14px 14px 0 0;
+}
+.kpi-card.kc1::before { background: var(--accent); }
+.kpi-card.kc2::before { background: #60a5fa; }
+.kpi-card.kc3::before { background: var(--accent3); }
+.kpi-card.kc4::before { background: var(--accent2); }
+.kpi-label { font-size: 11px; color: var(--text2); font-weight: 600; margin-bottom: 10px; letter-spacing: -0.1px; }
+.kpi-value { font-size: 26px; font-weight: 900; letter-spacing: -1px; line-height: 1; margin-bottom: 8px; }
+.kpi-card.kc1 .kpi-value { color: var(--accent); }
+.kpi-card.kc2 .kpi-value { color: #60a5fa; }
+.kpi-card.kc3 .kpi-value { color: var(--accent3); }
+.kpi-card.kc4 .kpi-value { color: var(--accent2); }
+.kpi-delta { font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+.kpi-delta.up { color: var(--accent); }
+.kpi-delta.down { color: var(--accent2); }
+.kpi-delta.neutral { color: var(--text2); }
+.kpi-icon { position: absolute; top: 16px; right: 16px; font-size: 24px; opacity: 0.18; }
+
+/* ─── Row grid ─── */
+.row2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* ─── Chart card ─── */
+.chart-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 20px 22px;
+}
+.chart-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.chart-card-title { font-size: 14px; font-weight: 800; letter-spacing: -0.3px; }
+.chart-card-sub { font-size: 11px; color: var(--text2); margin-top: 3px; font-weight: 500; }
+.chart-legend { display: flex; gap: 12px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); font-weight: 600; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─── Bar trend chart (manual) ─── */
+.bar-trend { display: flex; align-items: flex-end; gap: 6px; height: 100px; padding: 0 4px; }
+.bar-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.bar-fill {
+  width: 100%; border-radius: 4px 4px 0 0; min-height: 4px;
+  transition: height 0.6s ease; position: relative;
+}
+.bar-fill.today { box-shadow: 0 0 8px rgba(0,212,170,0.4); }
+.bar-label { font-size: 10px; color: var(--text3); font-weight: 600; }
+.bar-val { font-size: 9px; color: var(--text2); font-weight: 700; }
+
+/* ─── Country bars ─── */
+.country-list { display: flex; flex-direction: column; gap: 10px; }
+.country-row { display: flex; align-items: center; gap: 10px; }
+.country-flag { font-size: 18px; flex-shrink: 0; width: 24px; text-align: center; }
+.country-info { flex: 1; min-width: 0; }
+.country-name { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.2px; }
+.country-bar-wrap { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.country-bar-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+.country-pct { font-size: 12px; font-weight: 800; color: var(--text2); width: 36px; text-align: right; flex-shrink: 0; }
+
+/* ─── Competitor comparison ─── */
+.competitor-grid { display: flex; flex-direction: column; gap: 10px; }
+.comp-row { display: flex; align-items: center; gap: 10px; }
+.comp-rank { font-size: 13px; font-weight: 900; width: 20px; text-align: center; flex-shrink: 0; }
+.comp-rank.r1 { color: #ffd700; }
+.comp-rank.r2 { color: #b0b8c8; }
+.comp-rank.r3 { color: #cd7f32; }
+.comp-rank.rx { color: var(--text3); }
+.comp-fandom {
+  width: 52px; font-size: 10px; font-weight: 800; padding: 3px 6px;
+  border-radius: 5px; text-align: center; flex-shrink: 0;
+}
+.comp-artist { font-size: 11px; color: var(--text2); flex: 1; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comp-bar-wrap { width: 100px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+.comp-bar-fill { height: 100%; border-radius: 3px; }
+.comp-score { font-size: 11px; font-weight: 700; color: var(--text2); width: 64px; text-align: right; flex-shrink: 0; }
+.comp-delta { font-size: 10px; font-weight: 700; width: 28px; text-align: right; flex-shrink: 0; }
+
+/* ─── Insight cards ─── */
+.insight-list { display: flex; flex-direction: column; gap: 10px; }
+.insight-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; border-radius: 10px;
+  border: 1px solid transparent;
+}
+.insight-item.fire { background: rgba(255,184,0,0.05); border-color: rgba(255,184,0,0.15); }
+.insight-item.warn { background: rgba(255,77,109,0.05); border-color: rgba(255,77,109,0.12); }
+.insight-item.tip  { background: rgba(0,212,170,0.05); border-color: rgba(0,212,170,0.12); }
+.insight-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.insight-body {}
+.insight-title { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; margin-bottom: 3px; }
+.insight-desc { font-size: 12px; color: var(--text2); font-weight: 500; line-height: 1.5; }
+.insight-desc strong { font-weight: 800; }
+.insight-item.fire .insight-desc strong { color: var(--accent3); }
+.insight-item.warn .insight-desc strong { color: var(--accent2); }
+.insight-item.tip  .insight-desc strong { color: var(--accent); }
+.insight-action {
+  margin-left: auto; flex-shrink: 0;
+  font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 6px;
+  border: none; cursor: pointer; font-family: var(--font);
+}
+.insight-item.fire .insight-action { background: rgba(255,184,0,0.12); color: var(--accent3); }
+.insight-item.warn .insight-action { background: rgba(255,77,109,0.1); color: var(--accent2); }
+.insight-item.tip  .insight-action { background: rgba(0,212,170,0.1); color: var(--accent); }
+
+/* ─── Cheer heatmap calendar ─── */
+.heatmap-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.hm-cell {
+  aspect-ratio: 1; border-radius: 3px; cursor: pointer;
+  transition: transform 0.1s; position: relative;
+}
+.hm-cell:hover { transform: scale(1.15); z-index: 1; }
+.hm-label-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 4px; }
+.hm-day-label { font-size: 9px; color: var(--text3); text-align: center; font-weight: 600; }
+
+/* ─── Streak & retention ─── */
+.stat-row { display: flex; gap: 12px; }
+.stat-mini {
+  flex: 1; background: var(--card2); border-radius: 10px; padding: 14px 16px;
+  border: 1px solid var(--border);
+}
+.stat-mini-label { font-size: 10px; color: var(--text2); font-weight: 600; margin-bottom: 6px; }
+.stat-mini-value { font-size: 20px; font-weight: 900; letter-spacing: -0.8px; }
+
+/* ─── Footer status ─── */
+.footer-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 40px;
+  background: var(--surface); border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--text3); font-weight: 500;
+}
+.footer-live { display: flex; align-items: center; gap: 6px; color: var(--accent); font-weight: 700; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-text">Global <span>K</span>Chart</div>
+    <span class="logo-badge">레이블 파트너</span>
+  </div>
+  <div class="topbar-right">
+    <div>
+      <div class="topbar-label">파트너 레이블</div>
+      <div class="label-name">YG Entertainment</div>
+    </div>
+    <div class="avatar">YG</div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">메뉴</div>
+      <div class="sidebar-item active"><span class="si-icon">📊</span> 팬덤 대시보드</div>
+      <div class="sidebar-item"><span class="si-icon">📈</span> 추이 분석</div>
+      <div class="sidebar-item"><span class="si-icon">🌍</span> 글로벌 분포</div>
+      <div class="sidebar-item"><span class="si-icon">⚔️</span> 경쟁 분석</div>
+      <div class="sidebar-item"><span class="si-icon">📄</span> 주간 리포트 <span class="sidebar-dot" style="background:#ff4d6d"></span></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">아티스트</div>
+      <div class="artist-list" id="artistList"></div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title" id="pageTitle">제니 <span>(JENNIE)</span> 팬덤 현황</div>
+        <div class="page-sub" id="pageSub">BLINK · 2025년 1월 2주차 · 일간 기준</div>
+      </div>
+      <div class="header-controls">
+        <button class="period-btn active" onclick="setPeriod(this,'일간')">일간</button>
+        <button class="period-btn" onclick="setPeriod(this,'주간')">주간</button>
+        <button class="period-btn" onclick="setPeriod(this,'월간')">월간</button>
+        <button class="export-btn">📤 리포트 내보내기</button>
+      </div>
+    </div>
+
+    <!-- KPI grid -->
+    <div class="kpi-grid">
+      <div class="kpi-card kc1">
+        <div class="kpi-icon">♥</div>
+        <div class="kpi-label">이번 주 팬덤 총 응원점수</div>
+        <div class="kpi-value" id="kpi1">1,284,390</div>
+        <div class="kpi-delta up" id="kpi1d">▲ 전주 대비 +12.4%</div>
+      </div>
+      <div class="kpi-card kc2">
+        <div class="kpi-icon">🌍</div>
+        <div class="kpi-label">활성 응원 참여 국가</div>
+        <div class="kpi-value" id="kpi2">47개국</div>
+        <div class="kpi-delta up" id="kpi2d">▲ 전주 +3개국 신규</div>
+      </div>
+      <div class="kpi-card kc3">
+        <div class="kpi-icon">🔥</div>
+        <div class="kpi-label">응원 참여율 (활성 팬 기준)</div>
+        <div class="kpi-value" id="kpi3">68%</div>
+        <div class="kpi-delta up" id="kpi3d">▲ 전주 대비 +5%p</div>
+      </div>
+      <div class="kpi-card kc4">
+        <div class="kpi-icon">🏆</div>
+        <div class="kpi-label">글로벌 팬덤 순위</div>
+        <div class="kpi-value" id="kpi4">#1</div>
+        <div class="kpi-delta neutral" id="kpi4d">— 3주 연속 1위 유지</div>
+      </div>
+    </div>
+
+    <!-- Row: trend + country -->
+    <div class="row2">
+      <!-- 7일 응원 추이 -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-card-title">7일 응원 추이</div>
+            <div class="chart-card-sub">일별 팬덤 총 응원 점수 · 전주 비교</div>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>이번 주</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#2a2a40"></div>전주</div>
+          </div>
+        </div>
+        <div style="position:relative;height:160px"><canvas id="trendChart"></canvas></div>
+      </div>
+
+      <!-- 국가별 기여도 -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-card-title">Top 국가별 기여도</div>
+            <div class="chart-card-sub">전체 응원점수 내 비중</div>
+          </div>
+        </div>
+        <div class="country-list" id="countryList"></div>
+      </div>
+    </div>
+
+    <!-- Row: competitor + heatmap -->
+    <div class="row2">
+      <!-- 경쟁 팬덤 비교 -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-card-title">팬덤 응원 경쟁 현황</div>
+            <div class="chart-card-sub">이번 주 글로벌 팬덤 순위 · 실시간</div>
+          </div>
+        </div>
+        <div class="competitor-grid" id="competitorGrid"></div>
+      </div>
+
+      <!-- 응원 히트맵 캘린더 -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-card-title">응원 참여 히트맵</div>
+            <div class="chart-card-sub">최근 4주 · 일별 응원 강도</div>
+          </div>
+        </div>
+        <div class="hm-label-row">
+          <div class="hm-day-label">월</div><div class="hm-day-label">화</div>
+          <div class="hm-day-label">수</div><div class="hm-day-label">목</div>
+          <div class="hm-day-label">금</div><div class="hm-day-label">토</div>
+          <div class="hm-day-label">일</div>
+        </div>
+        <div class="heatmap-cal" id="heatmapCal"></div>
+        <div class="stat-row" style="margin-top:14px">
+          <div class="stat-mini">
+            <div class="stat-mini-label">평균 연속 응원 (스트릭)</div>
+            <div class="stat-mini-value" style="color:var(--accent3)">🔥 23일</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-label">재참여율 (D+7)</div>
+            <div class="stat-mini-value" style="color:var(--accent)">82%</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-label">신규 팬덤 유입</div>
+            <div class="stat-mini-value" style="color:#60a5fa">+2,840명</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Insights -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-card-title">🤖 자동 인사이트</div>
+          <div class="chart-card-sub">데이터 기반 자동 생성 · 매일 오전 9시 업데이트</div>
+        </div>
+      </div>
+      <div class="insight-list" id="insightList"></div>
+    </div>
+
+    <!-- Comeback effect (bonus section) -->
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <div>
+          <div class="chart-card-title">컴백 효과 분석 — LIKE JENNIE</div>
+          <div class="chart-card-sub">컴백 전후 팬덤 응원점수 변화 · 2025.01.13 발매</div>
+        </div>
+        <div style="font-size:12px;font-weight:700;color:var(--accent);background:rgba(0,212,170,0.08);padding:5px 12px;border-radius:8px;border:1px solid rgba(0,212,170,0.2)">
+          🔥 컴백
+        </div>
+      </div>
+      <div style="position:relative;height:120px"><canvas id="comebackChart"></canvas></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px">
+        <div style="background:var(--card2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text2);font-weight:600;margin-bottom:6px">발매 당일 응원점수</div>
+          <div style="font-size:20px;font-weight:900;color:var(--accent);letter-spacing:-0.8px">214,300점</div>
+          <div style="font-size:11px;color:var(--accent);font-weight:700;margin-top:4px">▲ 전일 대비 +312%</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text2);font-weight:600;margin-bottom:6px">컴백 후 신규 유입 팬</div>
+          <div style="font-size:20px;font-weight:900;color:#60a5fa;letter-spacing:-0.8px">+8,420명</div>
+          <div style="font-size:11px;color:#60a5fa;font-weight:700;margin-top:4px">3일 연속 신규 최다</div>
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text2);font-weight:600;margin-bottom:6px">글로벌 순위 변화</div>
+          <div style="font-size:20px;font-weight:900;color:var(--accent3);letter-spacing:-0.8px">3위 → 1위</div>
+          <div style="font-size:11px;color:var(--accent3);font-weight:700;margin-top:4px">컴백 D+2일째 역전</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer-bar">
+  <div class="footer-live"><div class="live-dot"></div>실시간 업데이트 중 · 1분 전 갱신</div>
+  <div>Global K Chart 레이블 파트너 대시보드 · Melon × LINE MUSIC × TME</div>
+  <div>데이터 기준: 2025.01.16 09:00 KST</div>
+</div>
+
+<script>
+// ─── Data ───
+const ARTISTS_DATA = [
+  {
+    id: 1, name: '제니 (JENNIE)', emoji: '🎤', fandom: 'BLINK', fandomColor: '#ff4d9e',
+    color: '#c0392b', rank: 1,
+    kpi: { score:'1,284,390', countries:'47개국', rate:'68%', chartRank:'#1', scoreDelta:'+12.4%', countryDelta:'+3개국 신규', rateDelta:'+5%p', rankDelta:'3주 연속 1위' },
+    trend: {
+      days: ['월','화','수','목','금','토','일'],
+      thisWeek: [142000,128000,135000,157000,189000,214300,118790],
+      lastWeek: [98000,104000,112000,108000,135000,141000,103000],
+    },
+    countries: [
+      { flag:'🇰🇷', name:'한국',       pct:33, color:'#ff4d9e' },
+      { flag:'🇺🇸', name:'미국',       pct:17, color:'#ff4d9e' },
+      { flag:'🇯🇵', name:'일본',       pct:15, color:'#ff6dae' },
+      { flag:'🇹🇭', name:'태국',       pct:10, color:'#ff8dce' },
+      { flag:'🇮🇩', name:'인도네시아', pct: 7, color:'#ffadde' },
+    ],
+    insights: [
+      { type:'fire', icon:'🔥', title:'JP 팬덤 응원 +34% 급증', desc:'이번 주 <strong>일본 BLINK 응원점수 34% 급등</strong>. 현지 팬미팅 발표 효과로 분석. JP 전용 콘텐츠 투입 적기', action:'JP 전략 보기' },
+      { type:'warn', icon:'⚠️', title:'CN 응원율 전주 대비 -8% 하락', desc:'중국 시장에서 <strong>CORTIS 부상으로 경쟁 심화</strong>. TME 내 플레이리스트 노출 점검 필요', action:'대응 방안' },
+      { type:'tip',  icon:'💡', title:'브라질 신규 팬덤 유입 감지', desc:'이번 주 브라질에서 <strong>신규 응원 참여 +1,240명</strong>. 남미 투어 수요 선행 신호로 분석. 현지 프로모션 검토 권장', action:'투어 검토' },
+    ],
+    heatmap: [95,72,80,88,60,45,55, 78,85,92,100,88,62,70, 45,50,68,74,55,40,48, 82,90,98,100,95,72,80],
+  },
+  {
+    id: 2, name: 'aespa', emoji: '🤖', fandom: 'MY', fandomColor: '#00d084',
+    color: '#1a1a2e', rank: 4,
+    kpi: { score:'1,271,045', countries:'43개국', rate:'61%', chartRank:'#4', scoreDelta:'+8.1%', countryDelta:'+1개국 신규', rateDelta:'+2%p', rankDelta:'전주 대비 ▼2' },
+    trend: {
+      days: ['월','화','수','목','금','토','일'],
+      thisWeek: [128000,135000,152000,168000,190000,202000,95545],
+      lastWeek: [88000,95000,102000,98000,115000,128000,92000],
+    },
+    countries: [
+      { flag:'🇰🇷', name:'한국', pct:30, color:'#00d084' },
+      { flag:'🇺🇸', name:'미국', pct:20, color:'#00c074' },
+      { flag:'🇯🇵', name:'일본', pct:15, color:'#00b064' },
+      { flag:'🇧🇷', name:'브라질', pct:10, color:'#00a054' },
+      { flag:'🇬🇧', name:'영국', pct: 7, color:'#009044' },
+    ],
+    insights: [
+      { type:'fire', icon:'🔥', title:'컴백 후 스트리밍 +182% 급등', desc:'Whiplash 발매 이후 <strong>3국 동반 스트리밍 182% 상승</strong>. 팬덤 응원점수도 컴백 D+3일 최고치 기록', action:'컴백 리포트' },
+      { type:'tip',  icon:'💡', title:'미국 MY 팬덤 결집력 2위', desc:'글로벌 팬덤 중 <strong>미국 MY 결집력 지수 2위</strong> (BLINK 다음). 북미 투어 검토 시 우선 순위 도시: LA, NY, 시카고', action:'북미 전략' },
+      { type:'warn', icon:'⚠️', title:'CN 팬덤 전주 -5% 소폭 감소', desc:'TME 내 <strong>중국 MY 응원 -5% 감소</strong>. JENNIE 컴백으로 BLINK 집중. 중화권 팬 리텐션 전략 검토 필요', action:'CN 대응' },
+    ],
+    heatmap: [70,75,82,88,65,50,58, 72,80,88,95,82,60,68, 50,55,70,78,60,45,52, 88,95,100,98,90,70,78],
+  },
+  {
+    id: 3, name: 'IVE (아이브)', emoji: '💫', fandom: 'DIVE', fandomColor: '#00d4ff',
+    color: '#1a237e', rank: 2,
+    kpi: { score:'998,240', countries:'39개국', rate:'74%', chartRank:'#2', scoreDelta:'+4.2%', countryDelta:'전주 동일', rateDelta:'+1%p', rankDelta:'4주 연속 TOP3' },
+    trend: {
+      days: ['월','화','수','목','금','토','일'],
+      thisWeek: [108000,115000,122000,138000,158000,172000,85240],
+      lastWeek: [102000,108000,114000,128000,142000,158000,81000],
+    },
+    countries: [
+      { flag:'🇰🇷', name:'한국', pct:40, color:'#00d4ff' },
+      { flag:'🇯🇵', name:'일본', pct:25, color:'#00c4ef' },
+      { flag:'🇺🇸', name:'미국', pct:15, color:'#00a4cf' },
+      { flag:'🇲🇾', name:'말레이시아', pct:10, color:'#0094bf' },
+      { flag:'🇵🇭', name:'필리핀', pct: 7, color:'#0080af' },
+    ],
+    insights: [
+      { type:'fire', icon:'🔥', title:'JP DIVE 결집력 글로벌 1위', desc:'이번 주 <strong>일본 DIVE 팬덤 결집력 지수 1위</strong>. 응원 1회당 참여 시간·강도 모두 최고. JP 단독 행사 검토 적기', action:'JP 기획' },
+      { type:'tip',  icon:'💡', title:'4주 연속 1위 → 결집력 뱃지 획득', desc:'IVE가 <strong>4주 연속 Melon 1위</strong> 달성. "결집력 뱃지" 표시로 차트 내 노출 강화. 레이블 파트너 리포트 배포 권장', action:'뱃지 확인' },
+      { type:'warn', icon:'⚠️', title:'신규 팬 유입 2주 연속 둔화', desc:'신규 DIVE 유입이 <strong>2주 연속 -12% 감소세</strong>. 기존 팬 결집은 강하나 외연 확장 둔화. 글로벌 바이럴 콘텐츠 필요', action:'전략 수립' },
+    ],
+    heatmap: [80,85,90,95,78,62,72, 82,88,94,100,88,70,80, 60,65,74,82,70,55,64, 85,92,98,100,92,75,84],
+  },
+];
+
+let currentArtist = ARTISTS_DATA[0];
+let trendChart = null;
+let comebackChart = null;
+
+// ─── Artist list ───
+function renderArtistList() {
+  const el = document.getElementById('artistList');
+  el.innerHTML = ARTISTS_DATA.map(a => `
+    <button class="artist-btn ${a.id===currentArtist.id?'active':''}" onclick="selectArtist(${a.id})">
+      <div class="artist-emoji" style="background:${a.color}30;border:1.5px solid ${a.color}40">${a.emoji}</div>
+      <div class="artist-btn-info">
+        <div class="artist-btn-name">${a.name}</div>
+        <div class="artist-btn-fandom" style="color:${a.fandomColor}">${a.fandom}</div>
+      </div>
+      <div class="artist-btn-rank">#${a.rank}</div>
+    </button>
+  `).join('');
+}
+
+function selectArtist(id) {
+  currentArtist = ARTISTS_DATA.find(a => a.id === id);
+  renderAll();
+}
+
+// ─── Render all ───
+function renderAll() {
+  const a = currentArtist;
+  document.getElementById('pageTitle').innerHTML = `${a.name} <span>${a.fandom}</span> 팬덤 현황`;
+  document.getElementById('pageSub').textContent = `${a.fandom} · 2025년 1월 2주차 · 일간 기준`;
+
+  // KPI
+  document.getElementById('kpi1').textContent = a.kpi.score;
+  document.getElementById('kpi1d').textContent = `▲ 전주 대비 ${a.kpi.scoreDelta}`;
+  document.getElementById('kpi2').textContent = a.kpi.countries;
+  document.getElementById('kpi2d').textContent = `▲ ${a.kpi.countryDelta}`;
+  document.getElementById('kpi3').textContent = a.kpi.rate;
+  document.getElementById('kpi3d').textContent = `▲ 전주 대비 ${a.kpi.rateDelta}`;
+  document.getElementById('kpi4').textContent = a.kpi.chartRank;
+  document.getElementById('kpi4d').textContent = `— ${a.kpi.rankDelta}`;
+
+  // Countries
+  const maxPct = a.countries[0].pct;
+  document.getElementById('countryList').innerHTML = a.countries.map(c => `
+    <div class="country-row">
+      <span class="country-flag">${c.flag}</span>
+      <div class="country-info">
+        <div class="country-name">${c.name}</div>
+        <div class="country-bar-wrap"><div class="country-bar-fill" style="width:${(c.pct/maxPct)*100}%;background:${c.color}"></div></div>
+      </div>
+      <div class="country-pct">${c.pct}%</div>
+    </div>
+  `).join('');
+
+  // Competitors
+  const COMPS = [
+    { rank:1, fandom:'BLINK', artist:'제니 (JENNIE)', color:'#ff4d9e', score:'1,284,390', pct:100, delta:'+12%' },
+    { rank:2, fandom:'MY',    artist:'aespa',         color:'#00d084', score:'1,271,045', pct:99,  delta:'+8%'  },
+    { rank:3, fandom:'DIVE',  artist:'IVE (아이브)',   color:'#00d4ff', score:'998,240',   pct:78,  delta:'+4%'  },
+    { rank:4, fandom:'MOA',   artist:'TOMORROW X TOGETHER', color:'#7c3aed', score:'542,000', pct:42, delta:'+2%' },
+    { rank:5, fandom:'ARMY',  artist:'BTS',           color:'#a0522d', score:'480,000',   pct:37,  delta:'—'    },
+  ];
+  const rankCls = ['r1','r2','r3','rx','rx'];
+  document.getElementById('competitorGrid').innerHTML = COMPS.map((c,i) => {
+    const isMe = c.fandom === a.fandom;
+    return `
+      <div class="comp-row" style="${isMe?'background:rgba(255,255,255,0.03);border-radius:8px;padding:4px 6px;margin:-4px -6px':''}">
+        <span class="comp-rank ${rankCls[i]}">${c.rank}</span>
+        <span class="comp-fandom" style="background:${c.color}18;color:${c.color}">${c.fandom}</span>
+        <span class="comp-artist">${c.artist}${isMe?' ◀ 내 아티스트':''}</span>
+        <div class="comp-bar-wrap"><div class="comp-bar-fill" style="width:${c.pct}%;background:${c.color}80"></div></div>
+        <span class="comp-score">${c.score}</span>
+        <span class="comp-delta" style="color:${c.delta==='—'?'var(--text3)':'var(--accent)'}">${c.delta}</span>
+      </div>
+    `;
+  }).join('');
+
+  // Insights
+  document.getElementById('insightList').innerHTML = a.insights.map(ins => `
+    <div class="insight-item ${ins.type}">
+      <div class="insight-icon">${ins.icon}</div>
+      <div class="insight-body">
+        <div class="insight-title">${ins.title}</div>
+        <div class="insight-desc">${ins.desc}</div>
+      </div>
+      <button class="insight-action">${ins.action} →</button>
+    </div>
+  `).join('');
+
+  // Heatmap
+  const hmEl = document.getElementById('heatmapCal');
+  const maxVal = Math.max(...a.heatmap);
+  hmEl.innerHTML = a.heatmap.map((v,i) => {
+    const intensity = v / maxVal;
+    const alpha = Math.max(0.08, intensity);
+    const color = a.fandomColor;
+    return `<div class="hm-cell" style="background:${color}${Math.round(alpha*255).toString(16).padStart(2,'0')}" title="${v.toLocaleString()}점"></div>`;
+  }).join('');
+
+  // Trend chart
+  renderTrendChart(a);
+
+  // Comeback chart
+  renderComebackChart(a);
+
+  // Artist list highlight
+  renderArtistList();
+}
+
+function renderTrendChart(a) {
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: a.trend.days,
+      datasets: [
+        {
+          label: '이번 주',
+          data: a.trend.thisWeek,
+          backgroundColor: a.trend.thisWeek.map((v,i) =>
+            i === a.trend.thisWeek.length-1 ? a.fandomColor + 'aa' : a.fandomColor + 'cc'
+          ),
+          borderRadius: 5,
+          borderSkipped: false,
+          order: 1,
+        },
+        {
+          label: '전주',
+          data: a.trend.lastWeek,
+          backgroundColor: '#2a2a40',
+          borderRadius: 5,
+          borderSkipped: false,
+          order: 2,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: '#1a1a2e', titleColor: '#fff', bodyColor: '#8888a8',
+        borderColor: '#2a2a40', borderWidth: 1,
+        callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw.toLocaleString()}점` }
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#3a3a58', font: { size: 11, weight: '600', family: 'Pretendard Variable' } } },
+        y: { grid: { color: '#1a1a2e' }, ticks: { color: '#3a3a58', font: { size: 10, family: 'Pretendard Variable' },
+          callback: v => v >= 1000 ? (v/1000).toFixed(0) + 'K' : v } },
+      }
+    }
+  });
+}
+
+function renderComebackChart(a) {
+  const ctx = document.getElementById('comebackChart').getContext('2d');
+  if (comebackChart) comebackChart.destroy();
+  const labels = ['D-7','D-6','D-5','D-4','D-3','D-2','D-1','D-Day','D+1','D+2','D+3','D+4','D+5'];
+  const data =   [62000,58000,64000,68000,72000,80000,95000,214300,198000,185000,172000,158000,148000];
+  comebackChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor: a.fandomColor,
+        backgroundColor: a.fandomColor + '15',
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: labels.map(l => l==='D-Day' ? '#fff' : a.fandomColor),
+        pointRadius: labels.map(l => l==='D-Day' ? 6 : 3),
+        pointBorderColor: labels.map(l => l==='D-Day' ? a.fandomColor : 'transparent'),
+        pointBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1a2e', titleColor: '#fff', bodyColor: '#8888a8',
+          borderColor: '#2a2a40', borderWidth: 1,
+          callbacks: { label: ctx => ` ${ctx.raw.toLocaleString()}점` }
+        },
+        annotation: { annotations: { line1: { type: 'line', x: 'D-Day', borderColor: '#ffffff20', borderWidth: 1 } } }
+      },
+      scales: {
+        x: { grid: { color: '#1a1a2e' }, ticks: { color: '#3a3a58', font: { size: 10, family: 'Pretendard Variable' } } },
+        y: { grid: { color: '#1a1a2e' }, ticks: { color: '#3a3a58', font: { size: 10, family: 'Pretendard Variable' },
+          callback: v => v >= 1000 ? (v/1000).toFixed(0) + 'K' : v } },
+      }
+    }
+  });
+}
+
+function setPeriod(el, period) {
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// Init
+renderArtistList();
+renderAll();
+</script>
+</body>
+</html>
