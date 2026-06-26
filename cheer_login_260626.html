@@ -1,0 +1,822 @@
+<!--
+  DESIGN_TOKENS · Global K Chart · 로그인
+  IS_LOGGED_IN: true
+  primary:#00D084  bg:#000  font:Noto Sans KR+DM Sans  frame:390×812
+-->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Global K Chart — 로그인</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700;9..40,800&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --p:#00D084;--pd:#00A066;
+  --bg:#000;--s:#111;--s2:#181818;
+  --t1:#fff;--t2:#888;--td:#444;
+  --b:#242424;--red:#FF4D6D;--yellow:#FFB800;
+  --font:'Noto Sans KR','DM Sans',-apple-system,sans-serif;
+  --en:'DM Sans',-apple-system,sans-serif;
+  --r:12px;
+}
+body{background:#0a0a0a;display:flex;justify-content:center;min-height:100vh;padding:20px 0;font-family:var(--font)}
+.frame{width:390px;height:812px;background:var(--bg);border-radius:36px;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.9),0 0 0 1px #2a2a2a;flex-shrink:0}
+.sb{display:flex;justify-content:space-between;align-items:center;padding:10px 24px 2px;font-family:var(--en);font-size:13px;font-weight:600;color:var(--t1);flex-shrink:0}
+.sb-r{display:flex;align-items:center;gap:5px}
+.hd{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 10px;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:7px}
+.logo-mark{width:26px;height:26px;background:var(--p);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.logo-text{font-family:var(--en);font-size:15px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.logo-text span{color:var(--p)}
+.user-chip{display:flex;align-items:center;gap:5px;background:rgba(0,208,132,.12);border:1px solid rgba(0,208,132,.3);border-radius:20px;padding:3px 10px 3px 4px;cursor:pointer}
+.user-avatar{width:22px;height:22px;border-radius:50%;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#000}
+.user-name{font-size:10px;font-weight:700;color:var(--p)}
+.chart-tabs{display:flex;padding:0 20px;border-bottom:1px solid var(--b);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.chart-tabs::-webkit-scrollbar{display:none}
+.ctab{flex:1;min-width:72px;padding:8px 4px;font-size:11px;font-weight:600;color:var(--td);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;transition:all .2s;white-space:nowrap;text-align:center;font-family:var(--font);margin-bottom:-1px}
+.ctab.on{color:var(--p);border-bottom-color:var(--p)}
+.period-tabs{display:flex;gap:5px;padding:7px 20px 5px;flex-shrink:0}
+.ptab{padding:3px 12px;font-size:10px;font-weight:600;color:var(--td);background:var(--s);border:1px solid var(--b);border-radius:20px;cursor:pointer;transition:all .2s;font-family:var(--font)}
+.ptab.on{background:var(--p);color:#000;border-color:var(--p)}
+.meta{display:flex;align-items:center;justify-content:space-between;padding:3px 20px 6px;flex-shrink:0}
+.live-badge{display:flex;align-items:center;gap:4px;background:rgba(0,208,132,.12);border-radius:20px;padding:2px 7px;font-size:10px;color:var(--p);font-weight:600;font-family:var(--en)}
+.live-dot{width:5px;height:5px;background:var(--p);border-radius:50%;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.meta-date{font-size:10px;color:var(--td);font-family:var(--en)}
+.scroll{flex:1;overflow-y:auto;scrollbar-width:none;padding-bottom:68px}
+.scroll::-webkit-scrollbar{display:none}
+/* leaderboard */
+.lb{margin:0 20px 10px;background:var(--s);border-radius:var(--r);border:1px solid var(--b);overflow:hidden}
+.lb-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;cursor:pointer;gap:8px}
+.lb-title{font-size:11px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:5px;flex-shrink:0}
+.lb-sub{font-size:10px;color:var(--td);font-weight:400}
+.lb-toggle{font-size:10px;color:var(--p);background:none;border:none;cursor:pointer;font-weight:600;font-family:var(--font);flex-shrink:0}
+.lb-ticker-wrap{flex:1;overflow:hidden;position:relative;mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.lb-ticker{display:flex;align-items:center;gap:0;width:max-content;animation:ticker 18s linear infinite}
+.lb-ticker:hover{animation-play-state:paused}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.lb-tick-item{display:flex;align-items:center;gap:4px;padding:0 14px;white-space:nowrap;border-right:1px solid var(--b)}
+.lb-tick-rank{font-family:var(--en);font-size:9px;font-weight:800;color:var(--td);width:14px}
+.lb-tick-rank.r1{color:#FFB800}.lb-tick-rank.r2{color:#A0AEC0}.lb-tick-rank.r3{color:#C47D3B}
+.lb-tick-name{font-size:10px;font-weight:700;color:var(--t1);font-family:var(--font)}
+.lb-tick-score{font-size:9px;color:var(--td);font-family:var(--en)}
+.frow{display:flex;align-items:center;padding:6px 14px;gap:7px;border-bottom:1px solid rgba(255,255,255,.03)}
+.frow:last-child{border-bottom:none}
+.frow.hidden,.hidden{display:none!important}
+.frank{font-family:var(--en);font-size:11px;font-weight:800;width:16px;text-align:center;flex-shrink:0;color:var(--td)}
+.frank.r1{color:#FFB800}.frank.r2{color:#A0AEC0}.frank.r3{color:#C47D3B}
+.fbar-w{flex:1;height:3px;background:var(--b);border-radius:2px;overflow:hidden}
+.fbar{height:100%;border-radius:2px;transition:width .6s ease}
+.fscore{font-family:var(--en);font-size:10px;color:var(--t2);font-weight:600;white-space:nowrap;transition:all .3s;min-width:52px;text-align:right}
+.fname-wrap{display:flex;flex-direction:column;width:60px;flex-shrink:0}
+.fname{font-size:11px;font-weight:700;color:var(--t1)}
+.fname-artist{font-size:9px;color:var(--t2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fav{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;border:1.5px solid rgba(255,255,255,.08)}
+/* result box */
+.result-box{margin:0 20px 10px;background:var(--s);border-radius:var(--r);border:1px solid var(--b);overflow:hidden;display:none}
+.result-hd{display:flex;align-items:center;justify-content:space-between;padding:9px 14px 7px;border-bottom:1px solid var(--b)}
+.result-title{font-size:11px;font-weight:700;color:var(--t1)}
+.result-period{font-size:10px;color:var(--td);font-family:var(--en)}
+.rrow{display:flex;align-items:center;padding:6px 14px;gap:7px;border-bottom:1px solid rgba(255,255,255,.03)}
+.rrow:last-child{border-bottom:none}
+.rrank{font-family:var(--en);font-size:11px;font-weight:800;color:var(--td);width:16px;text-align:center;flex-shrink:0}
+.rname{font-size:11px;font-weight:600;color:var(--t1);flex:1}
+.rscore{font-family:var(--en);font-size:10px;color:var(--t2);font-weight:600}
+/* section header */
+.sec-hd{display:flex;justify-content:space-between;align-items:center;padding:8px 20px 6px}
+.sec-title{font-size:14px;font-weight:700;color:var(--t1);letter-spacing:-.5px}
+.sec-sub{font-size:10px;color:var(--td)}
+/* artist row */
+.arow{padding:9px 20px;display:flex;align-items:center;gap:11px;cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.04);position:relative}
+.arow:active{background:rgba(255,255,255,.02)}
+.arow.on{background:var(--s)}
+.rank-blk{width:26px;text-align:center;flex-shrink:0}
+.rank-n{font-family:var(--en);font-weight:800;color:var(--t1);line-height:1;display:block}
+.rank-c{font-family:var(--en);font-size:10px;display:block;margin-top:2px}
+.rank-c.up{color:var(--p)}.rank-c.dn{color:var(--red)}.rank-c.sm{color:var(--td)}.rank-c.nw{color:var(--yellow);font-weight:700}
+.avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:1.5px solid #242424;flex-shrink:0}
+.ainfo{flex:1;min-width:0}
+.aname{font-size:13px;font-weight:700;color:var(--t1)}
+.afandom{font-size:10px;color:var(--td);margin-top:1px}
+.cpills{display:flex;gap:3px;margin-top:4px}
+.cpill{font-family:var(--en);font-size:9px;font-weight:700;padding:2px 4px;border-radius:3px;display:flex;align-items:center;gap:2px}
+.cpill.kr{background:rgba(255,77,109,.12);color:#FF6B88}
+.cpill.jp{background:rgba(96,165,250,.12);color:#60A5FA}
+.cpill.cn{background:rgba(255,184,0,.12);color:#FFB800}
+/* instagram-style likes */
+.ig-likes{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:34px;cursor:default;position:relative}
+.ig-likes.cheer-ready{cursor:pointer}
+.ig-heart{font-size:15px;line-height:1;color:var(--t2)}
+.ig-heart.active{color:var(--p)}
+.ig-count{font-family:var(--en);font-size:10px;font-weight:700;color:var(--t2);line-height:1.2}
+.ig-cd{font-family:var(--en);font-size:8px;font-weight:700;color:var(--p);line-height:1.3}
+@keyframes heartPop{0%{transform:scale(1)}25%{transform:scale(1.5)}50%{transform:scale(.9)}100%{transform:scale(1)}}
+.ig-heart.popping{animation:heartPop .35s ease}
+.float-num{position:absolute;top:-16px;right:0;font-family:var(--en);font-size:13px;font-weight:800;color:var(--p);pointer-events:none;animation:floatUp .85s ease-out forwards;z-index:10}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-20px)}}
+/* artist card */
+.acard{display:none;background:var(--s);border-bottom:1px solid var(--b)}
+.acard.on{display:block}
+.csec{padding:12px 20px;border-bottom:1px solid var(--b)}
+.csec:last-child{border-bottom:none}
+.csec-label{font-size:10px;font-weight:700;color:var(--td);letter-spacing:.7px;text-transform:uppercase;margin-bottom:8px}
+.cr-grid{display:flex;gap:5px}
+.cr-card{flex:1;background:var(--s2);border-radius:8px;padding:9px 7px;border:1px solid var(--b);text-align:center}
+.cr-flag{font-size:14px;display:block;margin-bottom:3px}
+.cr-num{font-family:var(--en);font-size:18px;font-weight:800;color:var(--t1);line-height:1}
+.cr-lbl{font-size:9px;color:var(--td);margin-top:2px}
+.cr-chg{font-size:9px;font-weight:700;margin-top:2px}
+.cr-chg.up{color:var(--p)}.cr-chg.dn{color:var(--red)}.cr-chg.sm{color:var(--td)}
+.cheer-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cstat{background:var(--s2);border-radius:8px;padding:8px 10px;border:1px solid var(--b)}
+.cstat-l{font-size:9px;color:var(--td);margin-bottom:2px}
+.cstat-v{font-family:var(--en);font-size:14px;font-weight:800;color:var(--t1)}
+.cstat-v.acc{color:var(--p)}
+.cstat-s{font-size:9px;color:var(--td);margin-top:1px}
+.cd-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;margin-bottom:3px}
+.cd-lbl{font-size:10px;color:var(--td)}
+.cd-timer{font-size:10px;color:var(--p);font-family:var(--en);font-weight:700}
+.cd-track{height:3px;background:var(--b);border-radius:2px;overflow:hidden}
+.cd-fill{height:100%;background:var(--p);border-radius:2px;width:30%;animation:cdFill 1s ease-out}
+@keyframes cdFill{from{width:100%}to{width:30%}}
+/* card country */
+.card-ctry{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.song-list{display:flex;flex-direction:column;gap:5px}
+.song-row{display:flex;align-items:center;gap:9px;padding:7px 9px;background:var(--s2);border-radius:7px;border:1px solid var(--b)}
+.song-n{font-family:var(--en);font-size:10px;color:var(--td);width:12px;text-align:center;flex-shrink:0}
+.song-art{width:30px;height:30px;border-radius:5px;background:#242424;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.song-info{flex:1;min-width:0}
+.song-t{font-size:11px;font-weight:600;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.song-s{font-size:9px;color:var(--td);margin-top:1px}
+.song-new{font-size:9px;background:rgba(0,208,132,.14);color:var(--p);padding:1px 4px;border-radius:3px;font-weight:700;flex-shrink:0}
+/* share button */
+.share-btn{display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:6px;border:1px solid var(--b);background:var(--s2);font-size:10px;font-weight:600;color:var(--t2);cursor:pointer;font-family:var(--font);flex-shrink:0;transition:all .15s}
+.share-btn:active{background:var(--b)}
+/* share card */
+.share-card{border-radius:14px;overflow:hidden;margin-bottom:14px;position:relative}
+.sc-bg{background:linear-gradient(135deg,#0a0a0a 0%,#111 50%,#0d1a12 100%);padding:18px 16px 14px}
+.sc-brand{display:flex;align-items:center;gap:6px;margin-bottom:14px}
+.sc-brand-mark{width:20px;height:20px;background:var(--p);border-radius:5px;display:flex;align-items:center;justify-content:center}
+.sc-brand-text{font-family:var(--en);font-size:12px;font-weight:800;color:#fff;letter-spacing:-.3px}
+.sc-brand-text span{color:var(--p)}
+.sc-main{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sc-emoji{font-size:32px;line-height:1}
+.sc-info{flex:1}
+.sc-fdom{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.sc-artist{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px}
+.sc-rank{text-align:right}
+.sc-rank-n{font-family:var(--en);font-size:28px;font-weight:800;color:var(--p);line-height:1}
+.sc-rank-l{font-size:9px;color:rgba(255,255,255,.4);font-family:var(--en)}
+.sc-stats{display:flex;gap:8px;margin-bottom:12px}
+.sc-stat{flex:1;background:rgba(255,255,255,.06);border-radius:8px;padding:8px 10px;border:1px solid rgba(255,255,255,.08)}
+.sc-stat-l{font-size:9px;color:rgba(255,255,255,.4);margin-bottom:2px}
+.sc-stat-v{font-family:var(--en);font-size:14px;font-weight:800;color:#fff}
+.sc-stat-v.acc{color:var(--p)}
+.sc-ctry{margin-bottom:4px}
+.sc-ctry-bar{height:5px;border-radius:3px;overflow:hidden;display:flex;gap:1px;margin-bottom:5px}
+.sc-ctry-labels{display:flex;align-items:center;gap:8px}
+.sc-ctry-lbl{display:flex;align-items:center;gap:3px;font-size:9px;color:rgba(255,255,255,.5);font-family:var(--en)}
+.sc-footer{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}
+.sc-footer-tag{font-size:9px;color:rgba(255,255,255,.3);font-family:var(--en)}
+.sc-footer-cta{font-size:9px;font-weight:700;color:var(--p);font-family:var(--en)}
+.share-actions{display:flex;gap:8px;margin-bottom:6px}
+.share-act-btn{flex:1;height:42px;border-radius:9px;border:1px solid var(--b);background:var(--s2);font-size:11px;font-weight:600;color:var(--t1);cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:5px}
+.share-act-btn.primary{background:var(--p);color:#000;border-color:var(--p)}
+/* monthly benefit */
+.benefit-banner{display:flex;align-items:center;gap:8px;padding:8px 14px;background:linear-gradient(90deg,rgba(255,184,0,.08),rgba(255,184,0,.04));border-top:1px solid rgba(255,184,0,.15)}
+.benefit-icon{font-size:14px;flex-shrink:0}
+.benefit-text{flex:1;font-size:10px;color:var(--t2);line-height:1.4}
+.benefit-text b{color:#FFB800;font-weight:700}
+.benefit-cta{font-size:9px;color:#FFB800;font-weight:700;white-space:nowrap;flex-shrink:0;font-family:var(--en)}
+.card-benefit{display:flex;align-items:center;gap:7px;padding:7px 10px;background:linear-gradient(90deg,rgba(255,184,0,.1),rgba(255,184,0,.05));border-radius:7px;border:1px solid rgba(255,184,0,.2);margin-top:8px}
+.card-benefit-icon{font-size:13px;flex-shrink:0}
+.card-benefit-text{font-size:10px;color:var(--t2);line-height:1.4;flex:1}
+.card-benefit-text b{color:#FFB800;font-weight:700}
+/* overlay & bottom sheet */
+.overlay{position:absolute;inset:0;background:rgba(0,0,0,.72);display:none;z-index:100;backdrop-filter:blur(3px)}
+.overlay.on{display:block}
+.bsheet{position:absolute;bottom:0;left:0;right:0;background:var(--s);border-radius:18px 18px 0 0;padding:20px 18px 22px;z-index:101;border-top:1px solid var(--b);transform:translateY(100%);transition:transform .32s cubic-bezier(.34,1.1,.64,1)}
+.bsheet.on{transform:translateY(0)}
+.bs-handle{width:32px;height:4px;background:var(--b);border-radius:2px;margin:0 auto 16px}
+.succ-anim{width:52px;height:52px;margin:0 auto 10px;background:rgba(0,208,132,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;animation:bsPop .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bsPop{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
+.succ-title{text-align:center;font-size:14px;font-weight:700;color:var(--p);margin-bottom:12px}
+.succ-box{background:var(--s2);border-radius:9px;padding:11px 13px;margin-bottom:10px;border:1px solid var(--b)}
+.succ-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0}
+.succ-lbl{font-size:12px;color:var(--t2)}
+.succ-val{font-size:12px;font-weight:700;color:var(--t1);font-family:var(--en)}
+.succ-val.acc{color:var(--p)}
+.succ-next{text-align:center;font-size:10px;color:var(--td);margin-bottom:14px}
+.succ-next span{color:var(--p);font-weight:600}
+.bsbtn{width:100%;height:46px;border-radius:9px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:var(--font);background:var(--p);color:#000}
+/* bottom nav */
+.bnav{position:absolute;bottom:0;left:0;right:0;height:60px;background:rgba(0,0,0,.95);border-top:1px solid var(--b);display:flex;align-items:flex-start;padding-top:7px;backdrop-filter:blur(10px);z-index:50}
+.nitem{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:3px 0}
+.nicon{font-size:18px}.nlbl{font-size:9px;color:var(--td);font-weight:500}
+.nitem.on .nlbl{color:var(--p)}
+@media(max-width:430px){body{padding:0;background:#000}.frame{width:100%;height:100vh;border-radius:0}}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="sb">
+    <span>9:41</span>
+    <div class="sb-r">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/></svg>
+    </div>
+  </div>
+  <div class="hd">
+    <div class="logo">
+      <div class="logo-mark"><svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M3 10L10 3L17 10L10 17Z" stroke="black" stroke-width="2.5"/><circle cx="10" cy="10" r="2" fill="black"/></svg></div>
+      <div class="logo-text">Global <span>K</span>Chart</div>
+    </div>
+    <div class="user-chip">
+      <div class="user-avatar">K</div>
+      <div class="user-name">kirby님</div>
+    </div>
+  </div>
+  <div class="chart-tabs">
+    <button class="ctab on" onclick="switchChart('global',this)">🌍 Global</button>
+    <button class="ctab" onclick="switchChart('melon',this)">🇰🇷 멜론</button>
+    <button class="ctab" onclick="switchChart('tme',this)">🇨🇳 TME</button>
+    <button class="ctab" onclick="switchChart('line',this)">🇯🇵 LINE</button>
+  </div>
+  <div class="period-tabs">
+    <button class="ptab on" onclick="switchPeriod('daily',this)">일간</button>
+    <button class="ptab" onclick="switchPeriod('weekly',this)">주간</button>
+    <button class="ptab" onclick="switchPeriod('monthly',this)">월간</button>
+  </div>
+  <div class="meta">
+    <div class="live-badge" id="liveBadge"><div class="live-dot"></div>LIVE</div>
+    <span class="meta-date" id="metaDate"></span>
+  </div>
+  <div class="scroll">
+    <div class="lb" id="lb">
+      <div class="lb-hd" onclick="toggleLb()">
+        <div class="lb-title">실시간 응원 현황</div>
+        <div class="lb-ticker-wrap" id="lbMini">
+          <div class="lb-ticker" id="lbTicker"></div>
+        </div>
+        <button class="lb-toggle" id="lbToggleBtn">▼</button>
+        <button class="lb-toggle" style="padding:0 2px" onclick="event.stopPropagation();openShareLb()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--p)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
+      </div>
+      <div id="lbRows" style="border-top:0"></div>
+      <div class="benefit-banner">
+        <div class="benefit-icon">🎁</div>
+        <div class="benefit-text">이번달 <b>1위 팬덤</b> 혜택 🎙️ 아티스트 실시간 채팅 on 뮤직웨이브</div>
+        <div class="benefit-cta">자세히 →</div>
+      </div>
+    </div>
+    <div class="result-box" id="resultBox">
+      <div class="result-hd">
+        <div class="result-title" id="resultTitle">이번주 팬덤 응원 순위</div>
+        <div class="result-period" id="resultPeriod"></div>
+      </div>
+      <div id="resultInner"></div>
+    </div>
+    <div class="sec-hd">
+      <div class="sec-title" id="secTitle">글로벌 차트</div>
+      <div class="sec-sub" id="secSub">일간 TOP 100</div>
+    </div>
+    <div id="aList"></div>
+  </div>
+  <div class="bnav">
+    <div class="nitem"><div class="nicon">🏠</div><div class="nlbl">홈</div></div>
+    <div class="nitem on"><div class="nicon">📊</div><div class="nlbl" style="color:var(--p)">차트</div></div>
+    <div class="nitem"><div class="nicon">🎵</div><div class="nlbl">음악</div></div>
+    <div class="nitem"><div class="nicon">❤️</div><div class="nlbl">응원</div></div>
+    <div class="nitem"><div class="nicon">👤</div><div class="nlbl">MY</div></div>
+  </div>
+  <div class="overlay" id="ov" onclick="closeAllSheets()"></div>
+  <div class="bsheet" id="shareSheet">
+    <div class="bs-handle"></div>
+    <div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:14px">공유하기</div>
+    <div class="share-card" id="shareCardPreview"></div>
+    <div class="share-actions">
+      <button class="share-act-btn" onclick="closeAllSheets()">📋 링크 복사</button>
+      <button class="share-act-btn" onclick="closeAllSheets()">📸 이미지 저장</button>
+      <button class="share-act-btn primary" onclick="closeAllSheets()">공유 →</button>
+    </div>
+  </div>
+  <!-- 응원 성공 바텀시트 -->
+  <div class="bsheet" id="cheerSheet">
+    <div class="bs-handle"></div>
+    <div class="succ-anim" style="font-size:26px;color:var(--p)">♥</div>
+    <div class="succ-title">응원 완료!</div>
+    <div class="succ-box">
+      <div class="succ-row"><span class="succ-lbl" id="cheerRankLabel">팬덤 현재 순위</span><span class="succ-val acc" id="cheerRank">—</span></div>
+      <div class="succ-row"><span class="succ-lbl">1위까지 남은 점수</span><span class="succ-val" id="cheerGap">—</span></div>
+      <div class="succ-row"><span class="succ-lbl">내 응원 횟수</span><span class="succ-val acc" id="cheerCount">—</span></div>
+    </div>
+    <div class="succ-next">다음 응원 가능 <span id="cheerNext">—</span></div>
+    <button class="bsbtn" onclick="closeAllSheets()">확인</button>
+  </div>
+</div>
+<script>
+const FDOM_META = {
+  ARMY:    {emoji:'💛', bg:'#1a1a05', artist:'BTS'},
+  BLINK:   {emoji:'🩷', bg:'#1a0510', artist:'BLACKPINK'},
+  MY:      {emoji:'🖤', bg:'#0a0a1a', artist:'aespa'},
+  DIVE:    {emoji:'💙', bg:'#050a1a', artist:'IVE'},
+  Bunnies: {emoji:'💜', bg:'#10051a', artist:'NewJeans'},
+  STAY:    {emoji:'🐺', bg:'#0d0a05', artist:'Stray Kids'},
+  ONCE:    {emoji:'🌸', bg:'#1a0a0a', artist:'TWICE'},
+  Carats:  {emoji:'💎', bg:'#05101a', artist:'SEVENTEEN'},
+  'EXO-L': {emoji:'🌙', bg:'#0a0a0a', artist:'EXO'},
+  ReVeluv: {emoji:'🌹', bg:'#1a050a', artist:'Red Velvet'},
+};
+
+const ARTISTS = [
+  {id:1,name:'JENNIE',    emoji:'💚',fandom:'BLINK',   ranks:{global:1,kr:1,jp:3,cn:2}, change:{global:0,kr:1,jp:-1,cn:0},  scoreNum:3921004, fdomRank:2, fdomGap:366327,  state:'cooldown', cd:null, myCheerCount:3, songs:[{t:'Mantra',s:'2024',nw:true},{t:'SPOT!',s:'with Zico · 2024',nw:false},{t:'You & Me',s:'2023',nw:false}]},
+  {id:2,name:'aespa',     emoji:'🖤',fandom:'MY',      ranks:{global:2,kr:2,jp:1,cn:5}, change:{global:1,kr:0,jp:2,cn:-1},  scoreNum:2150889, fdomRank:3, fdomGap:1770115, state:'ready',    cd:null, myCheerCount:0, songs:[{t:'Whiplash',s:'2024',nw:true},{t:'Supernova',s:'2024',nw:false},{t:'Drama',s:'2023',nw:false}]},
+  {id:3,name:'IVE',       emoji:'💙',fandom:'DIVE',    ranks:{global:3,kr:3,jp:2,cn:4}, change:{global:-1,kr:0,jp:1,cn:0},  scoreNum:1892440, fdomRank:4, fdomGap:258449,  state:'ready',    cd:null, myCheerCount:0, songs:[{t:'Accendio',s:'2024',nw:true},{t:'I AM',s:'2023',nw:false},{t:'Baddie',s:'2023',nw:false}]},
+  {id:4,name:'NewJeans',  emoji:'💜',fandom:'Bunnies', ranks:{global:4,kr:4,jp:4,cn:3}, change:{global:0,kr:-1,jp:0,cn:1},  scoreNum:1634890, fdomRank:5, fdomGap:257550,  state:'ready',    cd:null, myCheerCount:0, songs:[{t:'Bubble Gum',s:'2024',nw:true},{t:'Supernatural',s:'2024',nw:false},{t:'OMG',s:'2023',nw:false}]},
+  {id:5,name:'BTS',       emoji:'💛',fandom:'ARMY',    ranks:{global:5,kr:5,jp:5,cn:1}, change:{global:0,kr:0,jp:0,cn:2},   scoreNum:4287331, fdomRank:1, fdomGap:0,       state:'ready',    cd:null, myCheerCount:0, songs:[{t:'Butter',s:'2021',nw:false},{t:'Dynamite',s:'2020',nw:false},{t:'DNA',s:'2017',nw:false}]},
+  {id:6,name:'BLACKPINK', emoji:'🩷',fandom:'BLINK',   ranks:{global:6,kr:7,jp:6,cn:6}, change:{global:1,kr:1,jp:-1,cn:0},  scoreNum:980200,  fdomRank:2, fdomGap:0,       state:'ready',    cd:null, myCheerCount:0, songs:[{t:'Pink Venom',s:'2022',nw:false},{t:'Shut Down',s:'2022',nw:false},{t:'How You Like That',s:'2020',nw:false}]},
+  {id:7,name:'TWICE',     emoji:'🌸',fandom:'ONCE',    ranks:{global:7,kr:6,jp:7,cn:8}, change:{global:-1,kr:0,jp:1,cn:-1}, scoreNum:1114002, fdomRank:7, fdomGap:0,       state:'ready',    cd:null, myCheerCount:0, songs:[{t:'Strategy',s:'2024',nw:true},{t:'FANCY',s:'2019',nw:false},{t:'TT',s:'2016',nw:false}]},
+  {id:8,name:'Stray Kids',emoji:'🐺',fandom:'STAY',    ranks:{global:8,kr:8,jp:8,cn:7}, change:{global:2,kr:1,jp:2,cn:3},   scoreNum:1289331, fdomRank:6, fdomGap:0,       state:'ready',    cd:null, myCheerCount:0, songs:[{t:'Chk Chk Boom',s:'2024',nw:true},{t:'MIROH',s:'2019',nw:false},{t:"God's Menu",s:'2020',nw:false}]},
+];
+
+const CHART={global:{label:'글로벌 차트',rk:'global'},melon:{label:'멜론 차트',rk:'kr'},tme:{label:'TME 차트',rk:'cn'},line:{label:'LINE MUSIC 차트',rk:'jp'}};
+const PERIOD={
+  daily:  {sub:'일간 TOP 100',    date:'2026.06.26 · 매일 00:00 초기화', live:true, rp:''},
+  weekly: {sub:'주간 결과 TOP 100', date:'2026.06.16 ~ 06.22 결과',        live:false,rp:'2026.06.16 ~ 06.22'},
+  monthly:{sub:'월간 결과 TOP 100', date:'2026.06 결과',                   live:false,rp:'2026년 6월'},
+};
+let curChart='global',curPeriod='daily',expandedId=null,lbOpen=false;
+
+function nextHour(){
+  const d=new Date();
+  d.setHours(d.getHours()+1,0,0,0);
+  return `${String(d.getHours()).padStart(2,'0')}:00`;
+}
+ARTISTS.forEach(a=>{if(a.state==='cooldown')a.cd=nextHour()});
+
+const COUNTRY_DATA = {
+  ARMY:    [{flag:'🇰🇷',pct:42,color:'#FF4D6D'},{flag:'🇯🇵',pct:31,color:'#60A5FA'},{flag:'🇨🇳',pct:19,color:'#FFB800'},{flag:'🇺🇸',pct:4,color:'#A78BFA'},{flag:'🇹🇭',pct:2,color:'#34D399'},{flag:'🇵🇭',pct:1,color:'#F87171'},{flag:'🌍',pct:1,color:'#444'}],
+  BLINK:   [{flag:'🇰🇷',pct:38,color:'#FF4D6D'},{flag:'🇯🇵',pct:23,color:'#60A5FA'},{flag:'🇨🇳',pct:21,color:'#FFB800'},{flag:'🇹🇭',pct:8,color:'#34D399'},{flag:'🇺🇸',pct:5,color:'#A78BFA'},{flag:'🇮🇩',pct:3,color:'#F87171'},{flag:'🌍',pct:2,color:'#444'}],
+  MY:      [{flag:'🇨🇳',pct:40,color:'#FFB800'},{flag:'🇰🇷',pct:35,color:'#FF4D6D'},{flag:'🇯🇵',pct:18,color:'#60A5FA'},{flag:'🇹🇼',pct:4,color:'#34D399'},{flag:'🇹🇭',pct:2,color:'#A78BFA'},{flag:'🌍',pct:1,color:'#444'}],
+  DIVE:    [{flag:'🇰🇷',pct:52,color:'#FF4D6D'},{flag:'🇯🇵',pct:27,color:'#60A5FA'},{flag:'🇨🇳',pct:14,color:'#FFB800'},{flag:'🇺🇸',pct:4,color:'#A78BFA'},{flag:'🇹🇭',pct:2,color:'#34D399'},{flag:'🌍',pct:1,color:'#444'}],
+  Bunnies: [{flag:'🇰🇷',pct:38,color:'#FF4D6D'},{flag:'🇯🇵',pct:35,color:'#60A5FA'},{flag:'🇨🇳',pct:20,color:'#FFB800'},{flag:'🇺🇸',pct:3,color:'#A78BFA'},{flag:'🇦🇺',pct:2,color:'#34D399'},{flag:'🇬🇧',pct:1,color:'#F87171'},{flag:'🌍',pct:1,color:'#444'}],
+  STAY:    [{flag:'🇨🇳',pct:36,color:'#FFB800'},{flag:'🇰🇷',pct:33,color:'#FF4D6D'},{flag:'🇯🇵',pct:24,color:'#60A5FA'},{flag:'🇲🇾',pct:3,color:'#34D399'},{flag:'🇺🇸',pct:2,color:'#A78BFA'},{flag:'🌍',pct:2,color:'#444'}],
+  ONCE:    [{flag:'🇯🇵',pct:44,color:'#60A5FA'},{flag:'🇰🇷',pct:31,color:'#FF4D6D'},{flag:'🇨🇳',pct:17,color:'#FFB800'},{flag:'🇹🇼',pct:4,color:'#34D399'},{flag:'🇹🇭',pct:2,color:'#A78BFA'},{flag:'🇮🇩',pct:1,color:'#F87171'},{flag:'🌍',pct:1,color:'#444'}],
+  Carats:  [{flag:'🇰🇷',pct:40,color:'#FF4D6D'},{flag:'🇺🇸',pct:28,color:'#A78BFA'},{flag:'🇯🇵',pct:20,color:'#60A5FA'},{flag:'🇵🇭',pct:5,color:'#34D399'},{flag:'🇨🇳',pct:4,color:'#FFB800'},{flag:'🌍',pct:3,color:'#444'}],
+  'EXO-L': [{flag:'🇨🇳',pct:38,color:'#FFB800'},{flag:'🇰🇷',pct:36,color:'#FF4D6D'},{flag:'🇯🇵',pct:16,color:'#60A5FA'},{flag:'🇹🇭',pct:5,color:'#34D399'},{flag:'🌍',pct:5,color:'#444'}],
+  ReVeluv: [{flag:'🇰🇷',pct:45,color:'#FF4D6D'},{flag:'🇯🇵',pct:30,color:'#60A5FA'},{flag:'🇨🇳',pct:15,color:'#FFB800'},{flag:'🇹🇭',pct:6,color:'#34D399'},{flag:'🌍',pct:4,color:'#444'}],
+};
+
+const COUNTRY_POS = {
+  '🇰🇷':{x:243,y:58},'🇯🇵':{x:255,y:60},'🇨🇳':{x:232,y:62},
+  '🇺🇸':{x:68,y:62},'🇹🇭':{x:228,y:75},'🇮🇩':{x:238,y:85},
+  '🇵🇭':{x:247,y:77},'🇹🇼':{x:248,y:67},'🇲🇾':{x:233,y:80},
+  '🇦🇺':{x:258,y:100},'🇬🇧':{x:144,y:46},'🇧🇷':{x:105,y:95},
+};
+
+function worldMapHTML(fdom){
+  const d=COUNTRY_DATA[fdom]||[];
+  const real=d.filter(c=>c.flag!=='🌍');
+  const maxPct=Math.max(...real.map(c=>c.pct));
+  const bubbles=real.map(c=>{
+    const pos=COUNTRY_POS[c.flag];if(!pos)return'';
+    const r=Math.max(4,Math.round((c.pct/maxPct)*14));
+    return `<circle cx="${pos.x}" cy="${pos.y}" r="${r}" fill="${c.color}" fill-opacity="0.7" stroke="${c.color}" stroke-width="1" stroke-opacity="0.4"/>
+      <text x="${pos.x}" y="${pos.y+3}" text-anchor="middle" font-size="7" fill="white" font-weight="700" opacity="0.9">${c.pct}%</text>`;
+  }).join('');
+  return `<div style="background:#0a0f0a;border-radius:8px;border:1px solid #1a2a1a;overflow:hidden;position:relative">
+    <svg viewBox="0 20 310 120" width="100%" style="display:block">
+      <g fill="#1a2a1a" stroke="#243324" stroke-width="0.5">
+        <path d="M40,40 L95,38 L100,48 L95,75 L80,80 L65,75 L55,65 L42,60 Z"/>
+        <path d="M80,82 L100,80 L108,90 L110,110 L100,125 L88,120 L82,108 Z"/>
+        <path d="M138,38 L165,36 L170,44 L168,55 L155,58 L140,55 L136,46 Z"/>
+        <path d="M148,60 L170,58 L174,72 L172,95 L165,110 L155,112 L148,100 L144,80 Z"/>
+        <path d="M168,36 L270,34 L275,50 L268,70 L250,75 L230,78 L210,72 L185,68 L170,58 L168,44 Z"/>
+        <path d="M225,76 L255,74 L260,85 L255,92 L240,94 L228,88 Z"/>
+        <path d="M245,94 L270,92 L275,105 L268,118 L252,118 L244,108 Z"/>
+      </g>
+      ${bubbles}
+    </svg>
+    <div style="position:absolute;bottom:6px;right:8px;display:flex;gap:6px;align-items:center">
+      ${real.slice(0,3).map(c=>`<span style="font-size:8px;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:2px"><span style="width:6px;height:6px;border-radius:50%;background:${c.color};display:inline-block"></span>${c.flag}</span>`).join('')}
+    </div>
+  </div>`;
+}
+
+function ctryCardHTML(fdom){
+  const d=COUNTRY_DATA[fdom]||[];
+  const top3=d.slice(0,3);
+  const restItems=d.slice(3);
+  const restPct=restItems.reduce((s,c)=>s+c.pct,0);
+  const restCount=restItems.filter(c=>c.flag!=='🌍').length+(restItems.some(c=>c.flag==='🌍')?1:0);
+  const barSegs=top3.map(c=>`<div style="flex:${c.pct};background:${c.color};height:100%"></div>`).join('');
+  const etcSeg=restPct>0?`<div style="flex:${restPct};background:#333;height:100%"></div>`:'';
+  const pills=top3.map(c=>`<span style="display:flex;align-items:center;gap:3px;font-size:10px;font-family:var(--en)"><span style="width:7px;height:7px;border-radius:50%;background:${c.color};flex-shrink:0"></span>${c.flag} <b style="color:var(--t1)">${c.pct}%</b></span>`).join('');
+  const etcLabel=restPct>0?`<span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--td);font-family:var(--en)"><span style="width:7px;height:7px;border-radius:50%;background:#333;flex-shrink:0"></span>+${restCount}개국</span>`:'';
+  return `<div style="height:6px;border-radius:3px;overflow:hidden;display:flex;gap:1px;margin-bottom:8px">${barSegs}${etcSeg}</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--t2)">${pills}${etcLabel}</div>`;
+}
+
+const LB_DATA=[
+  {fdom:'ARMY',    score:'428만', bar:100, barColor:'var(--p)'},
+  {fdom:'BLINK',   score:'392만', bar:91,  barColor:'#60A5FA'},
+  {fdom:'MY',      score:'215만', bar:50,  barColor:'#A78BFA'},
+  {fdom:'DIVE',    score:'189만', bar:44,  barColor:'#555'},
+  {fdom:'Bunnies', score:'163만', bar:38,  barColor:'#555'},
+  {fdom:'STAY',    score:'129만', bar:30,  barColor:'#555'},
+  {fdom:'ONCE',    score:'111만', bar:26,  barColor:'#555'},
+];
+const RK_CLASS=['r1','r2','r3'];
+
+function renderLb(){
+  const m=FDOM_META;
+  const tickItems=LB_DATA.map((d,i)=>{
+    return `<div class="lb-tick-item">
+      <span class="lb-tick-rank ${RK_CLASS[i]||''}">${i+1}</span>
+      <span class="lb-tick-name">${d.fdom}</span>
+      <span class="lb-tick-score">${d.score}</span>
+    </div>`;
+  }).join('');
+  const ticker=document.getElementById('lbTicker');
+  if(ticker)ticker.innerHTML=tickItems+tickItems;
+  document.getElementById('lbRows').innerHTML=LB_DATA.map((d,i)=>{
+    const artistName=(m[d.fdom]||{}).artist||'';
+    return `<div class="frow hidden xfdom">
+      <div class="frank ${RK_CLASS[i]||''}">${i+1}</div>
+      <div style="display:flex;flex-direction:column;width:60px;flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;color:var(--t1)">${d.fdom}</div>
+        <div style="font-size:9px;color:var(--t2);margin-top:1px">${artistName}</div>
+      </div>
+      <div class="fbar-w"><div class="fbar" style="width:${d.bar}%;background:${d.barColor}"></div></div>
+      <div class="fscore">${d.score}</div>
+    </div>`;
+  }).join('');
+}
+
+const RESULT_DATA=[
+  {fdom:'ARMY',    score:'428만'},{fdom:'BLINK',   score:'392만'},{fdom:'MY',      score:'215만'},
+  {fdom:'DIVE',    score:'189만'},{fdom:'Bunnies', score:'163만'},{fdom:'STAY',    score:'129만'},
+  {fdom:'ONCE',    score:'111만'},{fdom:'Carats',  score:'98만'}, {fdom:'EXO-L',   score:'84만'},
+  {fdom:'ReVeluv', score:'71만'},
+];
+const MEDAL_COLORS=['#FFB800','#A0AEC0','#C47D3B'];
+let resultOpen=false;
+
+function toggleResult(){
+  resultOpen=!resultOpen;
+  document.querySelectorAll('.rrow-extra').forEach(x=>x.classList.toggle('hidden',!resultOpen));
+  document.getElementById('resultMoreBtn').textContent=resultOpen?'접기 ▲':'더보기 ▼';
+}
+
+function ctryFlags(fdom){
+  const all=COUNTRY_DATA[fdom]||[];
+  const real=all.filter(c=>c.flag!=='🌍');
+  const top2=real.slice(0,2);
+  const restCount=real.slice(2).length;
+  const restPct=all.reduce((s,c,i)=>i>=2?s+c.pct:s,0);
+  const segs=top2.map(c=>`<div style="flex:${c.pct};background:${c.color};height:100%"></div>`).join('')
+    +(restPct>0?`<div style="flex:${restPct};background:#333;height:100%"></div>`:'');
+  const flags=top2.map(c=>`<span style="font-size:10px">${c.flag}</span>`).join('');
+  const etc=restCount>0?`<span style="font-size:9px;color:var(--td);font-family:var(--en)">🌍+${restCount}</span>`:'';
+  return `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:3px">${flags}${etc}</div>
+    <div style="width:52px;height:3px;border-radius:2px;overflow:hidden;display:flex;gap:1px">${segs}</div>
+  </div>`;
+}
+
+function renderResult(){
+  const m=FDOM_META;
+  const medals=['🥇','🥈','🥉'];
+  const top3HTML=RESULT_DATA.slice(0,3).map((d,i)=>`<div class="rrow">
+    <div style="font-size:14px;width:20px;text-align:center;flex-shrink:0">${medals[i]}</div>
+    <div style="flex:1;min-width:0">
+      <div class="rname">${d.fdom}</div>
+      <div style="font-size:9px;color:var(--t2);margin-top:1px">${(m[d.fdom]||{}).artist||''}</div>
+    </div>
+    ${ctryFlags(d.fdom)}
+    <div class="rscore" style="color:${MEDAL_COLORS[i]};min-width:36px;text-align:right">${d.score}</div>
+  </div>`).join('');
+  const restHTML=RESULT_DATA.slice(3).map((d,i)=>`<div class="rrow rrow-extra hidden">
+    <div style="font-family:var(--en);font-size:11px;font-weight:800;color:var(--td);width:20px;text-align:center;flex-shrink:0">${i+4}</div>
+    <div style="flex:1;min-width:0">
+      <div class="rname">${d.fdom}</div>
+      <div style="font-size:9px;color:var(--t2);margin-top:1px">${(m[d.fdom]||{}).artist||''}</div>
+    </div>
+    ${ctryFlags(d.fdom)}
+    <div class="rscore" style="min-width:36px;text-align:right">${d.score}</div>
+  </div>`).join('');
+  const moreBtn=`<button id="resultMoreBtn" onclick="toggleResult()" style="width:100%;padding:7px;background:none;border:none;border-top:1px solid var(--b);font-size:10px;color:var(--p);font-weight:600;cursor:pointer;font-family:var(--font)">더보기 ▼</button>`;
+  resultOpen=false;
+  document.getElementById('resultInner').innerHTML=top3HTML+restHTML+moreBtn;
+}
+
+function fmtShort(n){
+  if(n>=100000000)return Math.round(n/10000000)/10+'억';
+  if(n>=10000)return Math.round(n/10000)+'만';
+  return n.toLocaleString('ko-KR');
+}
+function chg(v){if(v>0)return{t:`▲${v}`,c:'up'};if(v<0)return{t:`▼${Math.abs(v)}`,c:'dn'};return{t:'—',c:'sm'}}
+function sorted(){const k=CHART[curChart].rk;return[...ARTISTS].sort((a,b)=>a.ranks[k]-b.ranks[k])}
+
+function render(){
+  const pc=PERIOD[curPeriod],cc=CHART[curChart];
+  const isGlobal=curChart==='global';
+  document.getElementById('liveBadge').style.display=pc.live?'flex':'none';
+  document.getElementById('metaDate').textContent=pc.date;
+  document.getElementById('secTitle').textContent=cc.label;
+  document.getElementById('secSub').textContent=pc.sub;
+
+  const lb=document.getElementById('lb'),rb=document.getElementById('resultBox');
+  renderLb();renderResult();
+  if(!isGlobal){
+    lb.style.display='none';rb.style.display='none';
+  } else if(curPeriod==='daily'){
+    lb.style.display='block';rb.style.display='none';
+  } else {
+    lb.style.display='none';rb.style.display='block';
+    document.getElementById('resultTitle').textContent=curPeriod==='weekly'?'이번주 팬덤 응원 순위':'이번달 팬덤 응원 순위';
+    document.getElementById('resultPeriod').textContent=pc.rp;
+  }
+
+  const rk=cc.rk,showCheerBtn=isGlobal&&curPeriod==='daily';
+  const bgs=['#0d1117','#1a1a2e','#0f0c29','#1a0a0a','#0d1117','#1a1a2e','#1a2a1a','#1a1a0a'];
+
+  document.getElementById('aList').innerHTML=sorted().map(a=>{
+    const rank=a.ranks[rk],c=chg(a.change[rk]),fs=rank<10?'17px':'13px';
+    let rr='';
+    if(showCheerBtn){
+      const isCD=a.state==='cooldown';
+      if(isCD){
+        // 채워진 하트 (초록) + 수 — HH:00은 바텀시트에서만 표시
+        rr=`<div class="ig-likes" id="ig-${a.id}">
+          <div class="ig-heart active">♥</div>
+          <div class="ig-count" id="ic-${a.id}">${fmtShort(a.scoreNum)}</div>
+        </div>`;
+      } else {
+        // 빈 하트 + 수 → 클릭 시 응원
+        rr=`<div class="ig-likes cheer-ready" id="ig-${a.id}" onclick="doCheer(${a.id});event.stopPropagation()">
+          <div class="ig-heart">♡</div>
+          <div class="ig-count" id="ic-${a.id}">${fmtShort(a.scoreNum)}</div>
+        </div>`;
+      }
+    } else {
+      // 비일간/비글로벌 — 패시브 카운트만 표시
+      rr=`<div class="ig-likes"><div class="ig-heart">♥</div><div class="ig-count">${fmtShort(a.scoreNum)}</div></div>`;
+    }
+    return `
+    <div class="arow" id="row-${a.id}" onclick="toggle(${a.id})">
+      <div class="rank-blk"><span class="rank-n" style="font-size:${fs}">${rank}</span><span class="rank-c ${c.c}">${c.t}</span></div>
+      <div class="avatar" style="background:${bgs[(a.id-1)%8]}">${a.emoji}</div>
+      <div class="ainfo">
+        <div class="aname">${a.name}</div>
+        <div class="afandom">${a.fandom}</div>
+        <div class="cpills">
+          <div class="cpill kr">🇰🇷#${a.ranks.kr}</div>
+          <div class="cpill jp">🇯🇵#${a.ranks.jp}</div>
+          <div class="cpill cn">🇨🇳#${a.ranks.cn}</div>
+        </div>
+      </div>
+      ${rr}
+    </div>
+    <div class="acard" id="card-${a.id}">${cardHTML(a)}</div>`;
+  }).join('');
+}
+
+function cardHTML(a){
+  const cr=k=>chg(a.change[k]);
+  const sec1=`<div class="csec"><div class="csec-label">국가별 순위</div><div class="cr-grid">
+    <div class="cr-card"><span class="cr-flag">🇰🇷</span><div class="cr-num">#${a.ranks.kr}</div><div class="cr-lbl">멜론</div><div class="cr-chg ${cr('kr').c}">${cr('kr').t}</div></div>
+    <div class="cr-card"><span class="cr-flag">🇯🇵</span><div class="cr-num">#${a.ranks.jp}</div><div class="cr-lbl">LINE</div><div class="cr-chg ${cr('jp').c}">${cr('jp').t}</div></div>
+    <div class="cr-card"><span class="cr-flag">🇨🇳</span><div class="cr-num">#${a.ranks.cn}</div><div class="cr-lbl">TME</div><div class="cr-chg ${cr('cn').c}">${cr('cn').t}</div></div>
+  </div></div>`;
+
+  let sec2='';
+  if(curChart==='global'&&(curPeriod==='weekly'||curPeriod==='monthly')){
+    const pLabel=curPeriod==='weekly'?'이번주':'이번달';
+    const re=RESULT_DATA.find(d=>d.fdom===a.fandom);
+    const rRank=re?RESULT_DATA.indexOf(re)+1:a.fdomRank;
+    const rScore=re?re.score:'–';
+    const medals=['🥇','🥈','🥉'];
+    const rankBadge=rRank<=3?medals[rRank-1]:rRank+'위';
+    sec2=`<div class="csec"><div class="csec-label">${pLabel} 응원 결과</div>
+      <div class="cheer-stats">
+        <div class="cstat"><div class="cstat-l">팬덤 순위</div><div class="cstat-v acc" style="font-size:${rRank<=3?'18px':'14px'}">${rankBadge}</div><div class="cstat-s">${a.fandom}</div></div>
+        <div class="cstat"><div class="cstat-l">${pLabel} 응원</div><div class="cstat-v">${rScore}</div><div class="cstat-s">총 응원 점수</div></div>
+      </div>
+      <div style="margin-top:10px">
+        <div class="csec-label" style="margin-bottom:6px">글로벌 응원 비율</div>
+        <div>${ctryCardHTML(a.fandom)}</div>
+      </div>
+    </div>`;
+  } else if(curChart==='global'&&curPeriod==='daily'){
+    const cdExtra=a.state==='cooldown'
+      ?`<div class="cd-row"><span class="cd-lbl">다음 응원까지</span><span class="cd-timer">${a.cd}</span></div><div class="cd-track"><div class="cd-fill"></div></div>`
+      :'';
+    sec2=`<div class="csec"><div class="csec-label">팬덤 응원 현황</div>
+      <div class="cheer-stats">
+        <div class="cstat"><div class="cstat-l">팬덤 순위</div><div class="cstat-v acc">${a.fdomRank}위</div><div class="cstat-s">${a.fandom}</div></div>
+        <div class="cstat"><div class="cstat-l">${a.fdomRank>1?'1위까지':'🏆 1위!'}</div><div class="cstat-v">${a.fdomRank>1?fmtShort(a.fdomGap)+'점':'–'}</div><div class="cstat-s">${a.fdomRank>1?'점 차이':'유지 중'}</div></div>
+      </div>
+      ${cdExtra}
+      <div style="margin-top:10px">
+        <div class="csec-label" style="margin-bottom:6px">글로벌 응원 비율</div>
+        <div>${ctryCardHTML(a.fandom)}</div>
+      </div>
+      <button class="share-btn" style="width:100%;justify-content:center;margin-top:10px" onclick="openShare('${a.fandom}')">↗ 응원 현황 공유하기</button>
+    </div>`;
+  }
+  const sec3=`<div class="csec"><div class="csec-label">최신 발매곡</div><div class="song-list">
+    ${a.songs.map((s,i)=>`<div class="song-row">
+      <div class="song-n">${i+1}</div>
+      <div class="song-art">${a.emoji}</div>
+      <div class="song-info"><div class="song-t">${s.t}</div><div class="song-s">${s.s}</div></div>
+      ${s.nw?'<div class="song-new">NEW</div>':''}
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#444"><path d="M8 5v14l11-7z"/></svg>
+    </div>`).join('')}
+  </div></div>`;
+  return sec1+sec2+sec3;
+}
+
+// ─── 응원 로직 ───────────────────────────────────────
+function doCheer(id){
+  const a=ARTISTS.find(x=>x.id===id);
+  if(!a||a.state==='cooldown')return;
+
+  // 점수 업데이트
+  a.scoreNum+=Math.floor(Math.random()*300+100);
+  a.myCheerCount=(a.myCheerCount||0)+1;
+  a.state='cooldown';
+  a.cd=nextHour();
+
+  // DOM 타겟 업데이트 (전체 re-render 없이)
+  const igEl=document.getElementById(`ig-${id}`);
+  if(igEl){
+    // +1 float 애니메이션
+    const float=document.createElement('div');
+    float.className='float-num';
+    float.textContent='+1';
+    igEl.appendChild(float);
+    setTimeout(()=>float.remove(),900);
+    // 하트 상태 전환
+    igEl.className='ig-likes';
+    igEl.removeAttribute('onclick');
+    igEl.innerHTML=`<div class="ig-heart active popping">♥</div><div class="ig-count" id="ic-${id}">${fmtShort(a.scoreNum)}</div>`;
+    // 팝 애니메이션 제거
+    setTimeout(()=>{const h=igEl.querySelector('.ig-heart');if(h)h.classList.remove('popping');},400);
+  }
+
+  // 카드가 열려있으면 cd 영역도 업데이트
+  const card=document.getElementById(`card-${id}`);
+  if(card&&card.classList.contains('on')){
+    const cdRow=card.querySelector('.cd-row,.cd-track');
+    if(cdRow){
+      cdRow.closest('.csec')&&(cdRow.closest('.csec').innerHTML=buildSec2Inner(a));
+    }
+    // 카운트 재갱신
+    const cardScore=card.querySelector('.cstat-v.acc');
+    if(cardScore)cardScore.textContent=`${a.fdomRank}위`;
+  }
+
+  // 성공 바텀시트
+  const top1Score=ARTISTS.find(x=>x.fdomRank===1)?.scoreNum||0;
+  const gapToTop=a.fdomRank===1?0:top1Score-a.scoreNum;
+  document.getElementById('cheerRankLabel').textContent=`${a.fandom} 현재 순위`;
+  document.getElementById('cheerRank').textContent=`${a.fdomRank}위`;
+  document.getElementById('cheerGap').textContent=a.fdomRank===1?'🏆 1위 유지 중':fmtShort(gapToTop)+'점';
+  document.getElementById('cheerCount').textContent=`${a.myCheerCount}회`;
+  document.getElementById('cheerNext').textContent=a.cd;
+  document.getElementById('ov').classList.add('on');
+  document.getElementById('cheerSheet').classList.add('on');
+}
+
+function buildSec2Inner(a){
+  return `<div class="csec-label">팬덤 응원 현황</div>
+    <div class="cheer-stats">
+      <div class="cstat"><div class="cstat-l">팬덤 순위</div><div class="cstat-v acc">${a.fdomRank}위</div><div class="cstat-s">${a.fandom}</div></div>
+      <div class="cstat"><div class="cstat-l">${a.fdomRank>1?'1위까지':'🏆 1위!'}</div><div class="cstat-v">${a.fdomRank>1?fmtShort(a.fdomGap)+'점':'–'}</div><div class="cstat-s">${a.fdomRank>1?'점 차이':'유지 중'}</div></div>
+    </div>
+    <div class="cd-row"><span class="cd-lbl">다음 응원까지</span><span class="cd-timer">${a.cd}</span></div>
+    <div class="cd-track"><div class="cd-fill"></div></div>`;
+}
+
+// ─── 네비게이션 ────────────────────────────────────────
+function toggle(id){
+  const card=document.getElementById(`card-${id}`),row=document.getElementById(`row-${id}`);
+  if(!card)return;
+  if(expandedId&&expandedId!==id){document.getElementById(`card-${expandedId}`)?.classList.remove('on');document.getElementById(`row-${expandedId}`)?.classList.remove('on')}
+  const open=expandedId===id;
+  card.classList.toggle('on',!open);row.classList.toggle('on',!open);
+  expandedId=open?null:id;
+  if(!open)setTimeout(()=>card.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+}
+function switchChart(t,el){curChart=t;document.querySelectorAll('.ctab').forEach(x=>x.classList.remove('on'));el.classList.add('on');expandedId=null;render()}
+function switchPeriod(t,el){curPeriod=t;document.querySelectorAll('.ptab').forEach(x=>x.classList.remove('on'));el.classList.add('on');expandedId=null;render()}
+function toggleLb(){
+  lbOpen=!lbOpen;
+  document.querySelectorAll('#lbRows .xfdom').forEach(x=>x.classList.toggle('hidden',!lbOpen));
+  document.getElementById('lbRows').style.borderTop=lbOpen?'1px solid var(--b)':'0';
+  const mini=document.getElementById('lbMini');
+  if(mini)mini.style.display=lbOpen?'none':'block';
+  document.getElementById('lbToggleBtn').textContent=lbOpen?'▲':'▼';
+}
+function closeAllSheets(){
+  document.getElementById('ov').classList.remove('on');
+  document.getElementById('cheerSheet').classList.remove('on');
+  document.getElementById('shareSheet').classList.remove('on');
+}
+
+function openShareLb(){
+  const medals=['🥇','🥈','🥉'];
+  const rowsHTML=LB_DATA.map((d,i)=>{
+    const m=FDOM_META[d.fdom]||{emoji:'🎵',artist:''};
+    const rkColor=i<3?['#FFB800','#A0AEC0','#C47D3B'][i]:'#444';
+    const cd=(COUNTRY_DATA[d.fdom]||[]).filter(c=>c.flag!=='🌍');
+    const top2flags=cd.slice(0,2).map(c=>c.flag).join(' ');
+    const restCnt=cd.slice(2).length;
+    const etcTxt=restCnt>0?` <span style="font-size:8px;color:rgba(255,255,255,.3)">🌍+${restCnt}</span>`:'';
+    return `<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+      <span style="font-family:var(--en);font-size:10px;font-weight:800;color:${rkColor};width:16px;text-align:center;flex-shrink:0">${medals[i]||i+1}</span>
+      <span style="font-size:11px;flex-shrink:0">${m.emoji}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:700;color:#fff">${d.fdom}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,.35);margin-top:1px">${m.artist}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
+        <span style="font-size:10px">${top2flags}</span>${etcTxt}
+      </div>
+      <div style="width:50px;height:3px;background:#1a1a1a;border-radius:2px;overflow:hidden;flex-shrink:0">
+        <div style="width:${d.bar}%;height:100%;background:${d.barColor};border-radius:2px"></div>
+      </div>
+      <span style="font-family:var(--en);font-size:10px;color:rgba(255,255,255,.5);width:32px;text-align:right;flex-shrink:0">${d.score}</span>
+    </div>`;
+  }).join('');
+  const now=new Date();
+  const timeStr=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('shareCardPreview').innerHTML=`
+    <div class="sc-bg">
+      <div class="sc-brand">
+        <div class="sc-brand-mark"><svg width="10" height="10" viewBox="0 0 20 20" fill="none"><path d="M3 10L10 3L17 10L10 17Z" stroke="black" stroke-width="2.5"/><circle cx="10" cy="10" r="2" fill="black"/></svg></div>
+        <div class="sc-brand-text">Global <span>K</span>Chart</div>
+        <div style="margin-left:auto;font-size:9px;color:rgba(255,255,255,.3);font-family:var(--en)">실시간 응원 현황 · ${timeStr}</div>
+      </div>
+      <div style="margin-bottom:8px">${rowsHTML}</div>
+      <div class="sc-footer">
+        <div class="sc-footer-tag">#GlobalKChart #KpopFandom</div>
+        <div class="sc-footer-cta">melon.com/globalk →</div>
+      </div>
+    </div>`;
+  document.getElementById('ov').classList.add('on');
+  document.getElementById('shareSheet').classList.add('on');
+}
+
+function openShare(fdom){
+  const m=FDOM_META[fdom]||{emoji:'🎵',artist:fdom};
+  const lb=LB_DATA.find(d=>d.fdom===fdom)||{score:'–',bar:0,barColor:'#555'};
+  const rank=LB_DATA.findIndex(d=>d.fdom===fdom)+1;
+  const cd=COUNTRY_DATA[fdom]||[];
+  const top2=cd.filter(c=>c.flag!=='🌍').slice(0,2);
+  const restCnt=cd.filter(c=>c.flag!=='🌍').slice(2).length;
+  const restPct=cd.reduce((s,c,i)=>i>=2?s+c.pct:s,0);
+  const barSegs=top2.map(c=>`<div style="flex:${c.pct};background:${c.color}"></div>`).join('')+(restPct>0?`<div style="flex:${restPct};background:#333"></div>`:'');
+  const ctryLabels=top2.map(c=>`<span class="sc-ctry-lbl">${c.flag} ${c.pct}%</span>`).join('')+(restCnt>0?`<span class="sc-ctry-lbl">🌍 +${restCnt}개국</span>`:'');
+  const cheerData=ARTISTS.find(a=>a.fandom===fdom);
+  const fdomRank=cheerData?cheerData.fdomRank:rank;
+  document.getElementById('shareCardPreview').innerHTML=`
+    <div class="sc-bg">
+      <div class="sc-brand">
+        <div class="sc-brand-mark"><svg width="10" height="10" viewBox="0 0 20 20" fill="none"><path d="M3 10L10 3L17 10L10 17Z" stroke="black" stroke-width="2.5"/><circle cx="10" cy="10" r="2" fill="black"/></svg></div>
+        <div class="sc-brand-text">Global <span>K</span>Chart</div>
+        <div style="margin-left:auto;font-size:9px;color:rgba(255,255,255,.3);font-family:var(--en)">2026.06 · Daily</div>
+      </div>
+      <div class="sc-main">
+        <div class="sc-emoji">${m.emoji}</div>
+        <div class="sc-info"><div class="sc-fdom">${fdom}</div><div class="sc-artist">${m.artist}</div></div>
+        <div class="sc-rank"><div class="sc-rank-n">${fdomRank}위</div><div class="sc-rank-l">팬덤 응원 순위</div></div>
+      </div>
+      <div class="sc-stats">
+        <div class="sc-stat"><div class="sc-stat-l">오늘 응원</div><div class="sc-stat-v acc">${lb.score}</div></div>
+        <div class="sc-stat"><div class="sc-stat-l">글로벌 차트</div><div class="sc-stat-v">#${cheerData?cheerData.ranks.global:'–'}</div></div>
+      </div>
+      <div class="sc-ctry">
+        <div class="sc-ctry-bar">${barSegs}</div>
+        <div class="sc-ctry-labels">${ctryLabels}</div>
+      </div>
+      <div style="margin-top:10px">${worldMapHTML(fdom)}</div>
+      <div class="sc-footer">
+        <div class="sc-footer-tag">#GlobalKChart #${fdom}</div>
+        <div class="sc-footer-cta">melon.com/globalk →</div>
+      </div>
+    </div>`;
+  document.getElementById('ov').classList.add('on');
+  document.getElementById('shareSheet').classList.add('on');
+}
+
+render();
+</script>
+</body>
+</html>
